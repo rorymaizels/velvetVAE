@@ -21,9 +21,7 @@ setup(
     author_email="",
     url="",
     license="",
-    entry_points={
-        "console_scripts": ["velvet=velvet.__main__:run_velvet"]
-    },
+    entry_points={"console_scripts": ["velvet=velvet.__main__:run_velvet"]},
     python_requires=">=3.9",
     install_requires=required,
     packages=find_packages(exclude="docs"),

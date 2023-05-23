@@ -1,0 +1,10 @@
+black
+isort
+pytest
+pylint
+flake8
+yapf
+autopep8
+pycodestyle
+pydocstyle
+mypy

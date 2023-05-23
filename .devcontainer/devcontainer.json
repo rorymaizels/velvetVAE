@@ -1,0 +1,50 @@
+{
+    "name": "velvet",
+    "dockerFile": "Dockerfile",
+    "postCreateCommand": "python -m pip install --upgrade -r requirements-dev.txt -e .",
+
+    // https://github.com/microsoft/vscode/issues/110050
+    // Allows external terminal connection to dev container (you dont have to use the vscode terminal)
+    // docker exec -it -w /workspaces/$(basename $(pwd)) --env-file="$(pwd)/.devcontainer/container.env" $(docker ps | grep vsc-$(basename $(pwd)) | awk '{print $1}') /bin/bash
+    "postStartCommand": "printenv > .devcontainer/container.env",
+
+    // Configure tool-specific properties.
+    "customizations": {
+        // Configure properties specific to VS Code.
+        "vscode": {
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                // Editor preferences
+                "editor.renderWhitespace": "all",
+                "editor.renderControlCharacters": true,
+                "editor.whitespaceCharacter": "dot",
+                "python.linting.enabled": true,
+                // Enable linting
+                "python.linting.pylintEnabled": true,
+                "python.linting.flake8Enabled": true,
+                "python.linting.mypyEnabled": true,
+                "python.formatting.provider": "black",
+                // Tool paths
+                "python.formatting.autopep8Path": "/home/dev/.local/bin/autopep8",
+                "python.formatting.yapfPath": "/home/dev/.local/bin/yapf",
+                "python.linting.flake8Path": "/home/dev/.local/bin/flake8",
+                "python.linting.pycodestylePath": "/home/dev/.local/bin/pycodestyle",
+                "python.linting.pydocstylePath": "/home/dev/.local/bin/pydocstyle",
+                "python.linting.pylintPath": "/home/dev/.local/bin/pylint",
+                "python.formatting.blackPath": "/home/dev/.local/bin/black",
+                "mypy.dmypyExecutable": "/home/dev/.local/bin/dmypy",
+                // Tool config
+                "python.linting.flake8Args": [
+                    "--max-line-length=200",
+                    "--ignore=F841"
+                ],
+                "python.linting.pylintArgs": [
+                    "--max-line-length=200"
+                ],
+                "python.linting.mypyCategorySeverity.error":"Warning"
+            },
+            // Use local extensions
+            "extensions": ["ms-python.python", "ms-python.vscode-pylance", "ms-python.vscode-pylint", "ms-python.vscode-flake8", "ms-python.black-formatter"]
+        }
+    }
+}

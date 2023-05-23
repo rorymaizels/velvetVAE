@@ -2,7 +2,7 @@
 
 from setuptools import find_packages, setup
 
-version = "0.1dev"
+VERSION = "0.1dev"
 
 with open("README.md", encoding="UTF-8") as f:
     readme = f.read()
@@ -12,7 +12,7 @@ with open("requirements.txt", encoding="UTF-8") as f:
 
 setup(
     name="velvet",
-    version=version,
+    version=VERSION,
     description="",
     long_description=readme,
     long_description_content_type="text/markdown",

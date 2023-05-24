@@ -1,6 +1,7 @@
 {
     "name": "velvet",
     "dockerFile": "Dockerfile",
+    "runArgs": ["--platform=linux/amd64"],
     "postCreateCommand": "python -m pip install --upgrade -r requirements-dev.txt -e .",
 
     // https://github.com/microsoft/vscode/issues/110050

@@ -1,17 +1,12 @@
+"""Preprocessing functions."""
 from typing import Optional, Union, List, Tuple
-import sys
 import numpy as np
-
 import scanpy as sc
-import scvelo as scv
+from anndata import AnnData
 
-from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
 from scipy.sparse import csr_matrix, issparse
 from scvelo.preprocessing.neighbors import set_diagonal, get_csr_from_indices
-
-from anndata import AnnData
-import scanpy as sc
 
 
 def select_genes(
@@ -134,9 +129,7 @@ def size_normalize(
         adata.layers[new_layer] = (
             adata.layers[new_layer].A if issparse(adata.layers[new_layer]) else adata.layers[new_layer]
         )
-        adata.layers["old"] = (
-            adata.layers["old"].A if issparse(adata.layers["old"]) else adata.layers["old"]
-        )
+        adata.layers["old"] = adata.layers["old"].A if issparse(adata.layers["old"]) else adata.layers["old"]
     return adata
 
 
@@ -167,7 +160,9 @@ def moments(
     """
     Xs = csr_matrix.dot(connectivities, csr_matrix(X)).astype(np.float32).A
     if rescale:
-        Xs = Xs / n_neighbors
+        Xs = np.array(Xs) / n_neighbors
+    else:
+        Xs = np.array(Xs)
     return Xs
 
 

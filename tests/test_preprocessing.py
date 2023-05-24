@@ -16,17 +16,19 @@ from velvet.preprocessing import (
     get_distances_csr,
 )
 
+
 class BaseClass(unittest.TestCase):
-    def setUp(self): 
-        self.file_path = '/workspaces/Velvet/tests/data/test_preprocessing.h5ad'
-        self.adata = sc.read('/workspaces/Velvet/tests/data/test_preprocessing.h5ad')
-        self.X = sc.read('/workspaces/Velvet/tests/data/test_downstream.h5ad').layers['total']
-        self.connectivities = connectivities(total = self.X)
+    def setUp(self):
+        self.file_path = "/workspaces/Velvet/tests/data/test_preprocessing.h5ad"
+        self.adata = sc.read("/workspaces/Velvet/tests/data/test_preprocessing.h5ad")
+        self.X = sc.read("/workspaces/Velvet/tests/data/test_downstream.h5ad").layers["total"]
+        self.connectivities = connectivities(total=self.X)
         self.curated_list = np.random.choice(self.adata.var_names, size=10, replace=False).tolist()
         self.unwanted_list = np.random.choice(self.adata.var_names, size=10, replace=False).tolist()
 
     def tearDown(self):
         pass
+
 
 class TestRead(BaseClass):
     def test_read_output_type(self):
@@ -54,11 +56,12 @@ class TestMoments(BaseClass):
     def test_moments_rescale_consistency(self):
         Xs_rescale_true = moments(self.X, self.connectivities, rescale=True, n_neighbors=30)
         Xs_rescale_false = moments(self.X, self.connectivities, rescale=False, n_neighbors=30)
-        np.testing.assert_allclose(Xs_rescale_true, Xs_rescale_false * 30, rtol=1e-2)
+        np.testing.assert_allclose(Xs_rescale_true * 30, Xs_rescale_false, rtol=1e-2)
 
     def test_moments_output_shape(self):
         Xs = moments(self.X, self.connectivities)
         self.assertEqual(self.X.shape, Xs.shape)
+
 
 class TestGeneSelection(BaseClass):
     def test_genes_in_output_exist_in_input(self):
@@ -78,6 +81,7 @@ class TestGeneSelection(BaseClass):
         assert all(
             gene not in selected_genes for gene in self.unwanted_list
         ), "Some unwanted genes are present in the output."
+
 
 class TestSizeNormalize(BaseClass):
     def test_old_new_sum_to_total(self):
@@ -102,12 +106,12 @@ class TestSizeNormalize(BaseClass):
         adata_normalized = size_normalize(self.adata)
         np.testing.assert_allclose(
             np.array(np.sum(adata_normalized.layers["old"], axis=1)).flatten(),
-            np.mean(np.sum(adata_normalized.layers["old"], axis=1))
+            np.mean(np.sum(adata_normalized.layers["old"], axis=1)),
             rtol=1e-1,
         )
         np.testing.assert_allclose(
             np.array(np.sum(adata_normalized.layers["new"], axis=1)).flatten(),
-            np.mean(np.sum(adata_normalized.layers["new"], axis=1))
+            np.mean(np.sum(adata_normalized.layers["new"], axis=1)),
             rtol=1e-1,
         )
 

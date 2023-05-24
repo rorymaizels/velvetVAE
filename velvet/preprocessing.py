@@ -167,7 +167,7 @@ def moments(
     """
     Xs = csr_matrix.dot(connectivities, csr_matrix(X)).astype(np.float32).A
     if rescale:
-        Xs = csr_matrix(Xs.A / n_neighbors)
+        Xs = Xs / n_neighbors
     return Xs
 
 

@@ -1,7 +1,6 @@
 """Main module."""
 from velvet.submodule import VectorField, NeighborhoodConstraint
 from velvet.constants import REGISTRY_KEYS_VT
-from velvet.mixins import VelvetMixin
 from velvet.utils import NoWarningZINB
 
 from typing import Callable, Iterable, Optional
@@ -480,8 +479,9 @@ class VelVAE(BaseLatentModeModuleClass):
                 v_hat = generative_outputs["vel"]
                 vhc = v_hat.clone().detach()
                 k = tensors[REGISTRY_KEYS_VT.KNN_KEY].clone().detach()
+                ts = tensors[REGISTRY_KEYS_VT.TS_KEY].clone().detach()
 
-                v_proj = self.nc.project(x, vhc, k)
+                v_proj = self.nc.project(x, vhc, k, ts)
                 if self.nbr_loss == "mse":
                     nbr_loss = nn.MSELoss()(v_hat, v_proj) * self.nbr_lambda
                 elif self.nbr_loss == "cs":
@@ -499,8 +499,8 @@ class VelVAE(BaseLatentModeModuleClass):
                 vzc = vz.clone().detach()
                 zfc = zf.clone().detach()
                 kc = tensors[REGISTRY_KEYS_VT.KNN_KEY].clone().detach()
-
-                vz_proj = self.nc.project(zc, vzc, kc, zfull=zfc)
+                ts = tensors[REGISTRY_KEYS_VT.TS_KEY].clone().detach()
+                vz_proj = self.nc.project(zc, vzc, kc, ts, zfull=zfc)
 
                 if self.nbr_loss == "mse":
                     nbr_loss = nn.MSELoss()(vz, vz_proj) * self.nbr_lambda
@@ -990,8 +990,9 @@ class SplicingVelVAE(BaseLatentModeModuleClass):
                 v_hat = generative_outputs["vel"]
                 vhc = v_hat.clone().detach()
                 k = tensors[REGISTRY_KEYS_VT.KNN_KEY].clone().detach()
+                ts = tensors[REGISTRY_KEYS_VT.TS_KEY].clone().detach()
 
-                v_proj = self.nc.project(x, vhc, k)
+                v_proj = self.nc.project(x, vhc, k, ts)
                 if self.nbr_loss == "mse":
                     nbr_loss = nn.MSELoss()(v_hat, v_proj) * self.nbr_lambda
                 elif self.nbr_loss == "cs":
@@ -1009,8 +1010,9 @@ class SplicingVelVAE(BaseLatentModeModuleClass):
                 vzc = vz.clone().detach()
                 zfc = zf.clone().detach()
                 kc = tensors[REGISTRY_KEYS_VT.KNN_KEY].clone().detach()
+                ts = tensors[REGISTRY_KEYS_VT.TS_KEY].clone().detach()
 
-                vz_proj = self.nc.project(zc, vzc, kc, zfull=zfc)
+                vz_proj = self.nc.project(zc, vzc, kc, ts, zfull=zfc)
 
                 if self.nbr_loss == "mse":
                     nbr_loss = nn.MSELoss()(vz, vz_proj) * self.nbr_lambda

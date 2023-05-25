@@ -1,12 +1,22 @@
 """Preprocessing functions."""
 from typing import Optional, Union, List, Tuple
 import numpy as np
+import scipy
 import scanpy as sc
 from anndata import AnnData
 
 from sklearn.neighbors import NearestNeighbors
 from scipy.sparse import csr_matrix, issparse
 from scvelo.preprocessing.neighbors import set_diagonal, get_csr_from_indices
+from scanpy.neighbors import _get_indices_distances_from_dense_matrix as get_indices_distances
+from sklearn.metrics import pairwise_distances
+
+
+def read(file):
+    """
+    simple wrapper for scanpys read function
+    """
+    return sc.read(file)
 
 
 def select_genes(
@@ -133,11 +143,95 @@ def size_normalize(
     return adata
 
 
-def read(file):
+def neighborhood(
+    adata, n_neighbors=30, xkey="total", keep_self=False, symmetric=True, calculate_transition=True, verbose=True
+):
     """
-    simple wrapper for scanpys read function
+    based on: https://github.com/scverse/scanpy/blob/0692ef9ea30335b95f7e7f9aab7be856469d9f35/scanpy/neighbors/
+    reimplemented because scanpy enforces a max of 8192 cells for dense calculations.
     """
-    return sc.read(file)
+    if verbose:
+        print("Using ScanPy methods to calculate ", end="")
+
+    if xkey in adata.layers:
+        X = adata.layers[xkey]
+    elif xkey in adata.obsm:
+        X = adata.obsm[xkey]
+
+    if verbose:
+        print("distances, ", end="")
+    D = pairwise_distances(X)
+    Dsq = np.power(D, 2)
+
+    if verbose:
+        print("indices, ", end="")
+
+    knn_indices, knn_distances = get_indices_distances(D, n_neighbors + 1)
+    _, distances_sq = get_indices_distances(Dsq, n_neighbors + 1)
+
+    if keep_self:
+        # remove the final neighbour, as self is included in n_neighbors
+        knn_indices = knn_indices[:, :-1]
+        knn_distances = knn_distances[:, :-1]
+        distances_sq = distances_sq[:, :-1]
+
+    if not keep_self:
+        # remove the first neighbour, which is self
+        knn_indices = knn_indices[:, 1:]
+        knn_distances = knn_distances[:, 1:]
+        distances_sq = distances_sq[:, 1:]
+
+    if verbose:
+        print("connectivities, ", end="")
+
+    # calculate connectivities, W
+    sigmas_sq = np.median(distances_sq, axis=1)
+    sigmas = np.sqrt(sigmas_sq)
+    Num = 2 * np.multiply.outer(sigmas, sigmas)
+    Den = np.add.outer(sigmas_sq, sigmas_sq)
+    W = np.sqrt(Num / Den) * np.exp(-Dsq / Den)
+
+    # keep only n neighbours
+    mask = np.zeros(Dsq.shape, dtype=bool)
+    for i, row in enumerate(knn_indices):
+        mask[i, row] = True
+        if symmetric:  # if cell j is cell i's neighbor, make cell i cell j's neighbor
+            for j in row:
+                if i not in set(knn_indices[j]):
+                    W[j, i] = W[i, j]
+                    mask[j, i] = True
+
+    W[~mask] = 0
+    connectivities = csr_matrix(W)
+    dist_csr = get_csr_from_indices(knn_indices, knn_distances, adata.shape[0], n_neighbors)
+
+    if calculate_transition:
+        if verbose:
+            print("transitions, ", end="")
+        q = np.asarray(W.sum(axis=0))
+        Q = scipy.sparse.spdiags(1.0 / q, 0, W.shape[0], W.shape[0])
+        K = Q @ W @ Q
+        z = np.sqrt(np.asarray(K.sum(axis=0)))
+        Z = scipy.sparse.spdiags(1.0 / z, 0, K.shape[0], K.shape[0])
+        Ts = Z @ K @ Z
+
+    if verbose:
+        print("done. ")
+
+    # store results in cross-compatible way
+    adata.uns["neighbors"] = dict(
+        indices=knn_indices,
+        distances=dist_csr,
+        connectivities=connectivities,
+        transition=Ts,
+        params={"n_neighbors": n_neighbors},
+    )
+
+    print("KNN indices for Velvet stored in .obsm['knn_index'].")
+    adata.obsm["knn_index"] = knn_indices
+    if calculate_transition:
+        print("Similarity transition matrix (optionally) for Velvet stored in .obsm['Ts'].")
+        adata.obsm["Ts"] = knn_indices
 
 
 def moments(
@@ -213,7 +307,7 @@ def neighbors(
 def connectivities(
     adata: Optional[AnnData] = None,
     total: Optional[Union[np.ndarray, csr_matrix]] = None,
-    n_neighbors: Optional[int] = 30,
+    n_neighbors: int = 30,
     zero_diagonal: Optional[bool] = True,
 ) -> csr_matrix:
     """

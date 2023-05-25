@@ -1,13 +1,22 @@
 """mixins to support training and wider functionality."""
-from typing import Any, Dict, Optional, Union
+from velvet.submodule import MarkovProcess, SDE
+from velvet.preprocessing import neighbors
+
+from typing import Any, Dict, Optional, Union, Tuple, List
 
 from anndata._core.anndata import AnnData
 from anndata._core.views import ArrayView
 from numpy import ndarray
 from scipy.sparse._csr import csr_matrix
 
+import anndata as ann
+import matplotlib.pyplot as plt
+import scanpy as scv
+
 import numpy as np
 import torch
+from torch import nn
+from tqdm import tqdm
 
 from scvi.dataloaders import DataSplitter
 from scvi.train import TrainingPlan, TrainRunner
@@ -252,9 +261,7 @@ class VelvetMixin:
         adata.obs["uncertainty"] = scaled_cell_var
         return adata
 
-    def get_latent_dynamics(
-        self, module: Optional["Module"] = None, return_data: bool = True
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    def get_latent_dynamics(self, module=None, return_data: bool = True) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Get the latent dynamics of the data.
 
@@ -288,6 +295,91 @@ class VelvetMixin:
         self.adata.obsm["velocity_z"] = vz.detach().cpu().numpy()
         if return_data:
             return z, vz
+
+    def infer_pseudotime(
+        self,
+        color: Optional[str] = None,
+        n_neighbors: int = 30,
+        time_key: str = "t",
+        latent_key: str = "X_z",
+        velocity_key: str = "velocity_z",
+        n_jobs: int = 1,
+        verbose: bool = True,
+    ) -> None:
+        """
+        Infer pseudotime using the provided model. Pseudotime is calculated by scVelo.
+
+        Args:
+            model (Any): The model to infer pseudotime.
+            color (str, optional): The color to be used for scatter plots. Default is None.
+            n_neighbors (int, optional): The number of neighbors for the velocity graph. Default is 30.
+            time_key (str, optional): Key for the time in the model's adata. Default is 't'.
+            latent_key (str, optional): Key for the latent data in the model's adata. Default is 'X_z'.
+            velocity_key (str, optional): Key for the velocity data in the model's adata. Default is 'velocity_z'.
+            n_jobs (int, optional): Number of jobs to run in parallel for velocity graph calculation. Default is 1.
+            verbose (bool, optional): If True, print details during the calculation process. Default is True.
+
+        Returns:
+            None. This function modifies the model's adata in-place by adding pseudotime, end_points, and root_cells to it.
+        """
+        if verbose:
+            print("Wrapper for velocity pseudotime calculated by scVelo.")
+            print("Authors: Volker Bergen, Marius Lange, Stefan Peidli, F. Alexander Wolf & Fabian J. Theis")
+            print("Paper: https://www.nature.com/articles/s41587-020-0591-3")
+
+        self.get_latent_dynamics(return_data=False)
+        sub = ann.AnnData(
+            X=self.adata.obsm[latent_key],
+            layers={"X": self.adata.obsm[latent_key], "velocity": self.adata.obsm[velocity_key]},
+            obs=self.adata.obs.copy(),
+        )
+        neighbors(sub, total_layer="X", n_neighbors=n_neighbors, include_self=True)
+        scv.tl.velocity_graph(sub, xkey="X", vkey="velocity", n_jobs=n_jobs)
+        scv.tl.velocity_pseudotime(sub)
+        scv.pp.pca(sub)
+
+        fig = plt.figure(figsize=(18, 6))
+        ax1, ax2, ax3 = fig.subplots(1, 3)
+
+        scv.pl.scatter(
+            sub,
+            basis="pca",
+            color="velocity_pseudotime",
+            cmap="gnuplot",
+            fontsize=22,
+            size=40,
+            legend_loc="on data",
+            legend_fontsize=22,
+            ax=ax1,
+            show=False,
+        )
+        scv.pl.scatter(
+            sub,
+            basis="pca",
+            color="end_points",
+            cmap="gnuplot",
+            fontsize=22,
+            size=40,
+            legend_loc="on data",
+            legend_fontsize=22,
+            ax=ax2,
+            show=False,
+        )
+        scv.pl.scatter(
+            sub,
+            basis="pca",
+            color="root_cells",
+            cmap="gnuplot",
+            fontsize=22,
+            size=40,
+            legend_loc="on data",
+            legend_fontsize=22,
+            ax=ax3,
+        )
+
+        self.adata.obs[time_key] = sub.obs.velocity_pseudotime
+        self.adata.obs["end_points"] = sub.obs.end_points
+        self.adata.obs["root_cells"] = sub.obs.root_cells
 
 
 class SimulationMixin:
@@ -399,6 +491,75 @@ class SimulationMixin:
             return predictions, ts_kmc
         else:
             return predictions
+
+    def optimise_noise(
+        self,
+        n_neighbors: int,
+        n_jumps: int,
+        n_steps: int,
+        t_max: int,
+        dt: float,
+        n_sims: int = 20,
+        n_cells: Optional[int] = None,
+        ns_linspace: List[float] = [0.05, 0.5, 20],
+    ) -> int:
+        """
+        Compares the variance of Markov simulations with SDE simulations to find an appropriate noise
+        level for nSDE training
+
+        Args:
+            model (nn.Module): The model to be optimised.
+            n_neighbors (int): The number of neighbors for the Markov Process.
+            n_jumps (int): The number of jumps for the Markov Process.
+            n_steps (int): The number of steps for the Markov Process and SDE simulations.
+            t_max (int): The maximum time for SDE simulations.
+            dt (float): The time step for SDE simulations.
+            n_sims (int, optional): The number of simulations. Default is 20.
+            n_cells (int, optional): The number of cells. If None, it defaults to 2000. Default is None.
+            ns_linspace (list, optional): The linspace for noise scalar. Default is [0.05, 0.5, 20].
+
+        Returns:
+            int: The optimised noise for the model.
+        """
+        if n_cells is None:
+            n_cells = 2000
+        self.get_latent_dynamics(return_data=False)
+
+        mp = MarkovProcess(
+            self,
+            n_neighbors=n_neighbors,
+            use_space="latent_space",
+            use_spline=True,
+        )
+
+        z = self.adata.obsm["X_z"]
+        z = torch.tensor(z, device=self.device)
+        init = torch.randperm(z.shape[0])[:n_cells]
+        mp_sims = torch.zeros(n_sims, *mp.random_walk(z, init, n_jumps, n_steps, deterministic=False).shape)
+        for i in range(n_sims):
+            mp_sims[i] = mp.random_walk(z, init, n_jumps, n_steps, deterministic=False)
+        y = mp_sims[:, 1:, :, :].var(0)
+
+        results = []
+        tests = []
+        for ns in tqdm(torch.linspace(*ns_linspace)):
+            tests.append(ns)
+            sde = SDE(
+                self.module.n_latent,
+                prior_vectorfield=self.module.vf,
+                noise_scalar=ns,
+            )
+            initial_cells = z[init]
+            timespan = torch.linspace(0, t_max, n_steps, device=self.device)
+            sde_sims = torch.zeros_like(mp_sims)
+            with torch.no_grad():
+                for i in range(n_sims):
+                    sde_sims[i] = torchsde.sdeint_adjoint(
+                        sde, initial_cells, timespan, method="midpoint", dt=dt
+                    ).permute(1, 0, 2)
+                x = sde_sims[:, 1:, :, :].var(0)
+                results.append(torch.nn.MSELoss()(x, y))
+        return tests[int(torch.hstack(results).argmin())]
 
 
 class ModifiedTrainingPlan(TrainingPlan):

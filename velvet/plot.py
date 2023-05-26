@@ -1,5 +1,4 @@
-from velvet.submodule import SDE, MarkovProcess
-
+"""plotting functions"""
 from typing import List, Tuple, Optional
 import plotly.graph_objects as go
 import plotly.express as px
@@ -15,6 +14,7 @@ import matplotlib.pyplot as plt
 import torch
 import torchsde
 
+from velvet.submodule import SDE, MarkovProcess
 
 def scatter_3d(adata, color="cell_annotation", basis="vae", c=[0, 1, 2], size=False):
     """

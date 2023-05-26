@@ -1,13 +1,17 @@
+"""functional utils"""
+import random
 import warnings
 from typing import Optional
 import torch
 import numpy as np
-import random
 
 from scvi.distributions._negative_binomial import ZeroInflatedNegativeBinomial, log_zinb_positive
 
 
 def set_seed(seed=0):
+    """
+    across numpy and torch, set random seed.
+    """
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -16,6 +20,10 @@ def set_seed(seed=0):
 
 
 class NoWarningZINB(ZeroInflatedNegativeBinomial):
+    """
+    data for Velvet is normalised, which throws a warning with the standard
+    ZeroInflatedNegativeBinomial function, so here is a version that won't complain.
+    """
     def __init__(
         self,
         total_count: Optional[torch.Tensor] = None,

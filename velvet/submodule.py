@@ -1,7 +1,7 @@
 """components used for Velvet module and VelvetSDE"""
-from velvet.preprocessing import get_knn_indices
+from velvet.preprocessing import neighborhood
 
-from typing import Optional, Union, List
+from typing import Optional, List
 
 import numpy as np
 from sklearn.decomposition import PCA
@@ -12,7 +12,6 @@ import torch
 from torch import nn
 from scvi.module.base import auto_move_data
 import torchsde
-import multiprocessing as mp
 import anndata as ann
 
 from sklearn.decomposition import PCA
@@ -197,10 +196,10 @@ class MarkovProcess:
         else:
             self.use_terminal_states = False
 
-        subdata.obsm["knn_index"] = get_knn_indices(subdata, total_layer="total_for_neighbors", n_neighbors=n_neighbors)
+        neighborhood(subdata, xkey="total_for_neighbors", n_neighbors=n_neighbors, symmetric=False, calculate_transition=False, verbose=False)
         self.T = self.velocity_transition_matrix(subdata)
         if use_similarity:
-            Ts = self.similarity_transition_matrix(adata)
+            Ts = self.similarity_transition_matrix(self.adata)
             self.T = (similarity_strength * Ts) + ((1 - similarity_strength) * self.T)
 
         self.use_spline = use_spline

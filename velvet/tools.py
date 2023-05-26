@@ -1,21 +1,14 @@
-from velvet.submodule import ObsNet, ManifoldEstimator
-from velvet.cluster import KMeansLayer
-from velvet.preprocessing import neighbors
-from velvet.submodule import ManifoldEstimator
-
+"""tools"""
 from typing import Tuple
 import numpy as np
 from tqdm import tqdm, trange
 import torch
 import torch.utils.data as data_utils
-from tqdm import trange
-import numpy as np
 from sklearn.decomposition import PCA
-from tqdm import tqdm
 
-import torch
 from torchcubicspline import natural_cubic_spline_coeffs, NaturalCubicSpline
 
+from velvet.submodule import ObsNet, ManifoldEstimator
 
 class Cleaner:
     def __init__(
@@ -65,7 +58,7 @@ class Cleaner:
         self.trajectories = trajectories
         self.cell_ids = cell_ids
         self.estimator = ManifoldEstimator(self.cells_rep, n_neighbors)
-        self.manifold_index = self.estimator(self.trajectories_rep, self.n_jobs)
+        self.manifold_index = self.estimator(self.trajectories_rep)
 
     def clip(
         self,
@@ -147,7 +140,7 @@ class Cleaner:
         self.trajectories_rep = torch.tensor(
             np.array([self.pca.transform(t.detach().cpu().numpy()) for t in trajectories]), device=trajectories.device
         )
-        self.manifold_index = self.estimator(self.trajectories_rep, self.n_jobs)
+        self.manifold_index = self.estimator(self.trajectories_rep)
 
 
 def train_obsnet(

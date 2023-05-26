@@ -2,7 +2,7 @@
 from velvet.submodule import MarkovProcess, SDE
 from velvet.preprocessing import neighbors
 
-from typing import Any, Dict, Optional, Union, Tuple, List
+from typing import Optional, Union, Tuple, List
 
 from anndata._core.anndata import AnnData
 from anndata._core.views import ArrayView
@@ -11,12 +11,10 @@ from scipy.sparse._csr import csr_matrix
 
 import anndata as ann
 import matplotlib.pyplot as plt
-import scanpy as scv
+import scvelo as scv
 
 import numpy as np
 import torch
-from torch import nn
-from tqdm import tqdm
 
 from scvi.dataloaders import DataSplitter
 from scvi.train import TrainingPlan, TrainRunner
@@ -24,7 +22,6 @@ from scvi.train import TrainingPlan, TrainRunner
 from scipy.sparse import issparse
 
 from sklearn.decomposition import PCA
-import scvelo as scv
 from scvelo.core import LinearRegression as scveloLR
 from tqdm import tqdm, trange
 
@@ -298,7 +295,6 @@ class VelvetMixin:
 
     def infer_pseudotime(
         self,
-        color: Optional[str] = None,
         n_neighbors: int = 30,
         time_key: str = "t",
         latent_key: str = "X_z",
@@ -381,6 +377,62 @@ class VelvetMixin:
         self.adata.obs["end_points"] = sub.obs.end_points
         self.adata.obs["root_cells"] = sub.obs.root_cells
 
+class ModellingMixin():
+    """functions for downstream modelling & simulations"""
+    def quantify_uncertainty(self, n_samples=100, return_data=False):
+        lv, pv = self.generate_samples(n_samples=n_samples)
+        sample_variance = lv.var(0)
+
+        cellwise_var = sample_variance.mean(1)
+        dwise_var = sample_variance.mean(0)
+
+        cellwise_var_scaled = cellwise_var / cellwise_var.mean()
+        dwise_var_scaled = dwise_var / dwise_var.mean()
+
+        self.adata.obs['uncertainty'] = cellwise_var_scaled.detach().cpu().numpy()
+        self.adata.uns['dimensionwise_uncertainty'] = dwise_var_scaled.detach().cpu().numpy()
+
+        if return_data:
+            return cellwise_var_scaled, dwise_var_scaled
+        
+    def get_gene_expression(
+        self,
+        x
+    ):
+        x = x.to(self.device)
+        batch_index = torch.arange(x.shape[0], device=self.device)
+        size_factor = torch.full(
+            size=(x.shape[0], 1), 
+            fill_value=self.module.median_library_size.log(),
+            device=self.device
+        )
+        with torch.no_grad():
+            _, _, gex, _ = self.module.decoder(
+                self.module.dispersion,
+                x,
+                size_factor,
+                batch_index,
+            )
+        return gex
+        
+    def get_trajectory_gene_expression(
+        self,
+        trajectories
+    ):
+        mapped_trajectories = []
+        for traj in trajectories:
+            traj = traj.to(self.device)
+            traj_rate = self.get_gene_expression(traj)
+            mapped_trajectories.append(traj_rate[None,:,:])
+        gex = torch.vstack(mapped_trajectories)
+        return gex
+    
+    def extract_genes(self, gex, genes):
+        gex_numpy = gex.detach().cpu().numpy()
+        valid_genes = set(genes).intersection(self.adata.var_names)
+        gene_idx = [np.where(self.adata.var_names==gene)[0][0] for gene in valid_genes]
+        return gex_numpy[:,:,gene_idx].squeeze()
+
 
 class SimulationMixin:
     def simulate(
@@ -427,11 +479,11 @@ class SimulationMixin:
         Optional[Tuple[torch.Tensor, ndarray]]
             A tuple containing the trajectories and cell IDs if return_data is True, otherwise no return value.
         """
-        if type(initial_cells) == AnnData:
+        if isinstance(initial_cells, AnnData):
             initial_cells = initial_cells.obsm[latent_key]
-        if type(initial_cells) == csr_matrix:
+        elif isinstance(initial_cells, csr_matrix):
             initial_cells = initial_cells.A
-        if (type(initial_cells) == ndarray) or (type(initial_cells) == ArrayView):
+        elif (isinstance(initial_cells, ndarray)) or (isinstance(initial_cells, ArrayView)):
             initial_cells = torch.tensor(initial_cells, device=self.device)
 
         initial_samples = torch.repeat_interleave(initial_cells, n_samples_per_cell, dim=0)
@@ -573,10 +625,10 @@ class ModifiedTrainingPlan(TrainingPlan):
     plan_kwargs (dict): Additional keyword arguments for the TrainingPlan.
     """
 
-    def __init__(self, module: LightningModule, **plan_kwargs: Dict[str, Any]) -> None:
+    def __init__(self, module, **plan_kwargs):
         super().__init__(module, **plan_kwargs)
 
-    def training_step(self, batch: Any, batch_idx: int, optimizer_idx: int = 0) -> STEP_OUTPUT:
+    def training_step(self, batch, batch_idx, optimizer_idx = 0):
         # the modification:
         self.module.current_epoch = self.current_epoch
         self.module.global_step = self.global_step

@@ -1,6 +1,4 @@
-from velvet.constants import REGISTRY_KEYS_SDE
-from velvet.mixins import VelvetMixin, SDETrainingMixin, SimulationMixin
-
+"""code for VelvetSDE model"""
 from typing import List, Optional, Tuple
 from anndata import AnnData
 
@@ -10,8 +8,6 @@ from torch.distributions import Normal
 from torch.distributions import kl_divergence as kl
 import torchsde
 
-from scvi._compat import Literal
-from scvi._types import LatentDataType
 from scvi.data import AnnDataManager
 from scvi.data._utils import _get_latent_adata_type
 from scvi.data.fields import (
@@ -25,6 +21,9 @@ from scvi.data.fields import (
 )
 from scvi.module.base import BaseLatentModeModuleClass, LossOutput
 from scvi.model.base import ArchesMixin, BaseLatentModeModelClass, RNASeqMixin, VAEMixin
+
+from velvet.constants import REGISTRY_KEYS_SDE
+from velvet.mixins import VelvetMixin, SDETrainingMixin, SimulationMixin
 
 
 class VelvetSDE(
@@ -70,7 +69,7 @@ class VelvetSDE(
         batch_key: Optional[str] = None,
         categorical_covariate_keys: Optional[List[str]] = None,
         continuous_covariate_keys: Optional[List[str]] = None,
-        **kwargs: Any,
+        **kwargs,
     ) -> None:
         """
         Set up anndata for the VelvetSDE model.
@@ -126,7 +125,6 @@ class SDVAE(BaseLatentModeModuleClass):
         prior_module: nn.Module,
         sde_module: nn.Module,
         markov_module: nn.Module,
-        include_vel_loss: bool = False,
         latent_data_type: Optional[str] = None,
     ) -> None:
         """

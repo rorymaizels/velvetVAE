@@ -1,7 +1,4 @@
-from velvet.module import VelVAE, SplicingVelVAE
-from velvet.constants import REGISTRY_KEYS_VT
-from velvet.mixins import ModifiedUnsupervisedTrainingMixin, VelvetMixin, ModellingMixin
-
+"""higher level model class for Velvet"""
 import logging
 from typing import List, Optional
 
@@ -22,11 +19,14 @@ from scvi.data.fields import (
     NumericalJointObsField,
     NumericalObsField,
     ObsmField,
-    StringUnsField,
 )
 from scvi.model._utils import _init_library_size
-from scvi.model.base import UnsupervisedTrainingMixin, ArchesMixin, BaseLatentModeModelClass, RNASeqMixin, VAEMixin
+from scvi.model.base import ArchesMixin, BaseLatentModeModelClass, RNASeqMixin, VAEMixin
 from scvi.utils import setup_anndata_dsp
+
+from velvet.module import VelVAE, SplicingVelVAE
+from velvet.constants import REGISTRY_KEYS_VT
+from velvet.mixins import ModifiedUnsupervisedTrainingMixin, VelvetMixin, ModellingMixin
 
 logger = logging.getLogger(__name__)
 

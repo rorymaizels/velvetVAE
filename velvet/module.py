@@ -106,7 +106,6 @@ class VelVAE(BaseLatentModeModuleClass):
         kld_lambda: float = 0.1,
         neighborhood_kwargs={},
         vectorfield_kwargs={},
-        gamma_kwargs={},
         verbose=0,
     ):
         super().__init__()
@@ -256,6 +255,7 @@ class VelVAE(BaseLatentModeModuleClass):
             else:
                 raise ValueError(f"Unknown latent data type: {self.latent_data_type}")
             """
+            raise ValueError(f"latent data type: {self.latent_data_type} - not yet implemented")
         return input_dict
 
     def _get_generative_input(self, tensors, inference_outputs):
@@ -360,7 +360,6 @@ class VelVAE(BaseLatentModeModuleClass):
         self, z, vz, library, batch_index, cont_covs=None, cat_covs=None, size_factor=None, y=None, transform_batch=None
     ):
         """Runs the generative model."""
-        ### formatting
         if cat_covs is not None:
             categorical_input = torch.split(cat_covs, 1, dim=1)
         else:
@@ -463,7 +462,7 @@ class VelVAE(BaseLatentModeModuleClass):
         """Computes the loss function for the model."""
         x = tensors[REGISTRY_KEYS_VT.X_KEY]
 
-        ### perform vae freezing
+        # perform vae freezing
         if self.current_epoch > self.freeze_vae_after_epochs:
             self.freeze_mapping()
             vae_on = torch.tensor(0.0, device=x.device)
@@ -512,7 +511,7 @@ class VelVAE(BaseLatentModeModuleClass):
         else:
             nbr_loss = torch.tensor(0.0, device=x.device)
 
-        ### vae losses
+        # vae losses
         kld_z = kl(inference_outputs["qz"], generative_outputs["pz"]).sum(dim=1)
         if not self.use_observed_lib_size:
             kld_l = kl(
@@ -628,7 +627,6 @@ class SplicingVelVAE(BaseLatentModeModuleClass):
         kld_lambda: float = 0.1,
         neighborhood_kwargs={},
         vectorfield_kwargs={},
-        gamma_kwargs={},
         verbose=0,
     ):
         super().__init__()
@@ -974,7 +972,7 @@ class SplicingVelVAE(BaseLatentModeModuleClass):
         """Computes the loss function for the model."""
         x = tensors[REGISTRY_KEYS_VT.X_KEY]
 
-        ### perform vae freezing
+        # perform vae freezing
         if self.current_epoch > self.freeze_vae_after_epochs:
             self.freeze_mapping()
             vae_on = torch.tensor(0.0, device=x.device)
@@ -1024,7 +1022,7 @@ class SplicingVelVAE(BaseLatentModeModuleClass):
         else:
             nbr_loss = torch.tensor(0.0, device=x.device)
 
-        ### vae losses
+        # vae losses
         kld_z = kl(inference_outputs["qz"], generative_outputs["pz"]).sum(dim=1)
         if not self.use_observed_lib_size:
             kld_l = kl(

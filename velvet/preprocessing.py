@@ -6,10 +6,11 @@ import scanpy as sc
 from anndata import AnnData
 
 from sklearn.neighbors import NearestNeighbors
+from sklearn.metrics import pairwise_distances
+
 from scipy.sparse import csr_matrix, issparse
 from scvelo.preprocessing.neighbors import set_diagonal, get_csr_from_indices
 from scanpy.neighbors import _get_indices_distances_from_dense_matrix as get_indices_distances
-from sklearn.metrics import pairwise_distances
 
 
 def read(file):
@@ -17,7 +18,6 @@ def read(file):
     simple wrapper for scanpys read function
     """
     return sc.read(file)
-
 
 def select_genes(
     data: AnnData,
@@ -236,7 +236,7 @@ def neighborhood(
 
 def moments(
     X: Union[np.ndarray, csr_matrix],
-    connectivities: Union[np.ndarray, csr_matrix],
+    cnx: Union[np.ndarray, csr_matrix],
     rescale: Optional[bool] = True,
     n_neighbors: Optional[int] = 30,
 ) -> np.ndarray:
@@ -245,14 +245,14 @@ def moments(
 
     Parameters:
     - X (np.ndarray or csr_matrix): raw data to be processed.
-    - connectivities (np.ndarray or csr_matrix): representing the connectivity of the data.
+    - cnx (np.ndarray or csr_matrix): representing the connectivity of the data.
     - rescale (bool, optional): whether to rescale the data or not, defaults to True.
     - n_neighbors (int, optional): the number of neighbors to consider for the smoothing operation, defaults to 30.
 
     Returns:
     - Xs (np.ndarray): the smoothened data.
     """
-    Xs = csr_matrix.dot(connectivities, csr_matrix(X)).astype(np.float32).A
+    Xs = csr_matrix.dot(cnx, csr_matrix(X)).astype(np.float32).A
     if rescale:
         Xs = np.array(Xs) / n_neighbors
     else:
@@ -354,7 +354,6 @@ def connectivities(
     connectivities = csr_matrix(connectivities)
 
     return connectivities.tocsr().astype(np.float32)
-
 
 def get_knn_distances_and_indices(
     adata: AnnData,

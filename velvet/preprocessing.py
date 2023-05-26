@@ -89,6 +89,55 @@ def select_genes(
 
     return list(genes)
 
+def size_normalize_splicing(
+    adata0: AnnData,
+    genes: Optional[List[str]] = None,
+    spliced_layer: Optional[str] = "spliced",
+    unspliced_layer: Optional[str] = "unspliced",
+    unsparsify: Optional[bool] = True,
+) -> AnnData:
+    """
+    Size normalize layers of an AnnData object.
+    To handle two data layers, these are normalised independently,
+    and the 'total' is recalculated from normalised constituents
+    Normalising total & new creates issues as they are not independent.
+
+    Parameters
+    ----------
+    adata0 : anndata.AnnData
+        Annotated data matrix.
+    genes : list of str, optional
+        A list of genes to be selected from the dataset, by default None.
+    total_layer : str, optional
+        Specifies the 'total' layer in the adata.layers attribute, by default 'total'.
+    new_layer : str, optional
+        Specifies the 'new' layer in the adata.layers attribute, by default 'new'.
+    unsparsify : bool, optional
+        Whether to convert the 'total' and 'new' layers to dense format if they are in
+        sparse format, by default True.
+
+    Returns
+    -------
+    anndata.AnnData
+        A new AnnData object with size normalized layers.
+    """
+    adata = adata0.copy()
+    sc.pp.normalize_total(adata, layer=spliced_layer, target_sum=None)
+    sc.pp.normalize_total(adata, layer=unspliced_layer, target_sum=None)
+    adata.layers["total"] = adata.layers[spliced_layer] + adata.layers[unspliced_layer]
+
+    if genes is not None:
+        adata = adata[:, genes]
+
+    if unsparsify:
+        adata.layers[spliced_layer] = (
+            adata.layers[spliced_layer].A if issparse(adata.layers[spliced_layer]) else adata.layers[spliced_layer]
+        )
+        adata.layers[unspliced_layer] = (
+            adata.layers[unspliced_layer].A if issparse(adata.layers[unspliced_layer]) else adata.layers[unspliced_layer]
+        )
+        adata.layers["total"] = adata.layers["total"].A if issparse(adata.layers["total"]) else adata.layers["total"]
+    return adata
 
 def size_normalize(
     adata0: AnnData,
@@ -216,22 +265,22 @@ def neighborhood(
         Ts = Z @ K @ Z
 
     if verbose:
-        print("done. ")
+        print("... done! ")
 
     # store results in cross-compatible way
     adata.uns["neighbors"] = dict(
         indices=knn_indices,
         distances=dist_csr,
         connectivities=connectivities,
-        transition=Ts,
         params={"n_neighbors": n_neighbors},
     )
 
     print("KNN indices for Velvet stored in .obsm['knn_index'].")
     adata.obsm["knn_index"] = knn_indices
     if calculate_transition:
-        print("Similarity transition matrix (optionally) for Velvet stored in .obsm['Ts'].")
-        adata.obsm["Ts"] = knn_indices
+        print("Dense similarity transition matrix for Velvet stored in .obsm['Ts'].")
+        adata.uns["neighbors"]["similarity_transition"] = csr_matrix(Ts)
+        adata.obsm["Ts"] = np.vstack([Ts[i][ki] for i, ki in enumerate(knn_indices)])
 
 
 def moments(

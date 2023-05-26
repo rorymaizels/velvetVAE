@@ -292,6 +292,7 @@ class MarkovProcess:
         # this should be precomputed using the pp.neighborhood function
         Ts = adata.obsm["Ts"]
         return torch.tensor(Ts, self.device)
+        return torch.tensor(Ts, device=self.device)
 
     def velocity_transition_matrix(self, subdata: ann.AnnData) -> torch.Tensor:
         """

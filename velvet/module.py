@@ -91,6 +91,7 @@ class VelVAE(BaseLatentModeModuleClass):
         use_linear_decoder: bool = True,
         use_size_factor_key: bool = False,
         use_observed_lib_size: bool = True,
+        use_similarity_graph: bool = True,
         library_log_means: Optional[np.ndarray] = None,
         library_log_vars: Optional[np.ndarray] = None,
         var_activation: Optional[Callable] = None,
@@ -123,6 +124,7 @@ class VelVAE(BaseLatentModeModuleClass):
         self.bmode = biophysical_model
         self.space = neighborhood_space
         self.t = labelling_time
+        self.use_sim = use_similarity_graph
 
         # model hyperparams
         self.use_linear_decoder = use_linear_decoder
@@ -478,8 +480,10 @@ class VelVAE(BaseLatentModeModuleClass):
                 v_hat = generative_outputs["vel"]
                 vhc = v_hat.clone().detach()
                 k = tensors[REGISTRY_KEYS_VT.KNN_KEY].clone().detach()
-                ts = tensors[REGISTRY_KEYS_VT.TS_KEY].clone().detach()
-
+                if self.use_sim:
+                    ts = tensors[REGISTRY_KEYS_VT.TS_KEY].clone().detach()
+                else:
+                    ts = None
                 v_proj = self.nc.project(x, vhc, k, ts)
                 if self.nbr_loss == "mse":
                     nbr_loss = nn.MSELoss()(v_hat, v_proj) * self.nbr_lambda
@@ -498,7 +502,10 @@ class VelVAE(BaseLatentModeModuleClass):
                 vzc = vz.clone().detach()
                 zfc = zf.clone().detach()
                 kc = tensors[REGISTRY_KEYS_VT.KNN_KEY].clone().detach()
-                ts = tensors[REGISTRY_KEYS_VT.TS_KEY].clone().detach()
+                if self.use_sim:
+                    ts = tensors[REGISTRY_KEYS_VT.TS_KEY].clone().detach()
+                else:
+                    ts = None
                 vz_proj = self.nc.project(zc, vzc, kc, ts, zfull=zfc)
 
                 if self.nbr_loss == "mse":
@@ -614,6 +621,7 @@ class SplicingVelVAE(BaseLatentModeModuleClass):
         use_linear_decoder: bool = True,
         use_size_factor_key: bool = False,
         use_observed_lib_size: bool = True,
+        use_similarity_graph: bool = True,
         library_log_means: Optional[np.ndarray] = None,
         library_log_vars: Optional[np.ndarray] = None,
         var_activation: Optional[Callable] = None,
@@ -642,6 +650,7 @@ class SplicingVelVAE(BaseLatentModeModuleClass):
         # velocity modelling
         self.gamma_mode = gamma_mode
         self.space = neighborhood_space
+        self.use_sim = use_similarity_graph
 
         # model hyperparams
         self.use_linear_decoder = use_linear_decoder
@@ -988,8 +997,10 @@ class SplicingVelVAE(BaseLatentModeModuleClass):
                 v_hat = generative_outputs["vel"]
                 vhc = v_hat.clone().detach()
                 k = tensors[REGISTRY_KEYS_VT.KNN_KEY].clone().detach()
-                ts = tensors[REGISTRY_KEYS_VT.TS_KEY].clone().detach()
-
+                if self.use_sim:
+                    ts = tensors[REGISTRY_KEYS_VT.TS_KEY].clone().detach()
+                else:
+                    ts = None
                 v_proj = self.nc.project(x, vhc, k, ts)
                 if self.nbr_loss == "mse":
                     nbr_loss = nn.MSELoss()(v_hat, v_proj) * self.nbr_lambda
@@ -1008,8 +1019,10 @@ class SplicingVelVAE(BaseLatentModeModuleClass):
                 vzc = vz.clone().detach()
                 zfc = zf.clone().detach()
                 kc = tensors[REGISTRY_KEYS_VT.KNN_KEY].clone().detach()
-                ts = tensors[REGISTRY_KEYS_VT.TS_KEY].clone().detach()
-
+                if self.use_sim:
+                    ts = tensors[REGISTRY_KEYS_VT.TS_KEY].clone().detach()
+                else:
+                    ts = None
                 vz_proj = self.nc.project(zc, vzc, kc, ts, zfull=zfc)
 
                 if self.nbr_loss == "mse":

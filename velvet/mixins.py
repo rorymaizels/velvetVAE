@@ -481,9 +481,9 @@ class SimulationMixin:
         """
         if isinstance(initial_cells, AnnData):
             initial_cells = initial_cells.obsm[latent_key]
-        elif isinstance(initial_cells, csr_matrix):
+        if isinstance(initial_cells, csr_matrix):
             initial_cells = initial_cells.A
-        elif (isinstance(initial_cells, ndarray)) or (isinstance(initial_cells, ArrayView)):
+        if (isinstance(initial_cells, ndarray)) or (isinstance(initial_cells, ArrayView)):
             initial_cells = torch.tensor(initial_cells, device=self.device)
 
         initial_samples = torch.repeat_interleave(initial_cells, n_samples_per_cell, dim=0)

@@ -24,7 +24,7 @@ from scvi.model.base import ArchesMixin, BaseLatentModeModelClass, RNASeqMixin, 
 
 from velvet.constants import REGISTRY_KEYS_SDE
 from velvet.mixins import VelvetMixin, SDETrainingMixin, SimulationMixin
-
+from velvet.submodule import SDE, MarkovProcess
 
 class VelvetSDE(
     RNASeqMixin, VAEMixin, ArchesMixin, SDETrainingMixin, BaseLatentModeModelClass, VelvetMixin, SimulationMixin

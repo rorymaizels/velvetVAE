@@ -100,6 +100,7 @@ class Velvet(
         biophysical_model: Literal["simple", "full"] = "full",
         gamma_mode: Literal["fixed", "learned"] = "learned",
         labelling_time: float = 2.0,
+        use_similarity_graph: bool = True,
         neighborhood_kwargs={},
         vectorfield_kwargs={},
         **model_kwargs,
@@ -152,6 +153,7 @@ class Velvet(
             neighborhood_kwargs=neighborhood_kwargs,
             vectorfield_kwargs=vectorfield_kwargs,
             labelling_time=labelling_time,
+            use_similarity_graph=use_similarity_graph,
             **model_kwargs,
         )
         self._model_summary_string = (
@@ -218,18 +220,20 @@ class Velvet(
         %(param_cat_cov_keys)s
         %(param_cont_cov_keys)s
         """
-        setup_method_args = cls._get_setup_method_args(**locals())
+        setup_method_args = cls._get_setup_method_args(**locals())        
         anndata_fields = [
             LayerField(REGISTRY_KEYS_VT.X_KEY, x_layer, is_count_data=False),
             LayerField(REGISTRY_KEYS_VT.N_KEY, n_layer, is_count_data=False),
             ObsmField(REGISTRY_KEYS_VT.KNN_KEY, knn_layer),
-            ObsmField(REGISTRY_KEYS_VT.TS_KEY, ts_layer),
             CategoricalObsField(REGISTRY_KEYS_VT.BATCH_KEY, batch_key),
             CategoricalObsField(REGISTRY_KEYS_VT.LABELS_KEY, labels_key),
             NumericalObsField(REGISTRY_KEYS_VT.SIZE_FACTOR_KEY, size_factor_key, required=False),
             CategoricalJointObsField(REGISTRY_KEYS_VT.CAT_COVS_KEY, categorical_covariate_keys),
             NumericalJointObsField(REGISTRY_KEYS_VT.CONT_COVS_KEY, continuous_covariate_keys),
         ]
+        if ts_layer is not None:
+            anndata_fields.append(ObsmField(REGISTRY_KEYS_VT.TS_KEY, ts_layer))
+
         # register new fields for latent mode if needed
         latent_mode = _get_latent_adata_type(adata)
         if latent_mode is not None:
@@ -323,6 +327,7 @@ class VelvetSplicing(
         gamma_mode: Literal["fixed", "learned"] = "learned",
         neighborhood_kwargs={},
         vectorfield_kwargs={},
+        use_similarity_graph: bool = True,
         **model_kwargs,
     ):
         super().__init__(adata)
@@ -368,6 +373,7 @@ class VelvetSplicing(
             gamma_mode=gamma_mode,
             neighborhood_kwargs=neighborhood_kwargs,
             vectorfield_kwargs=vectorfield_kwargs,
+            use_similarity_graph=use_similarity_graph,
             **model_kwargs,
         )
         self._model_summary_string = (
@@ -437,14 +443,16 @@ class VelvetSplicing(
             LayerField(REGISTRY_KEYS_VT.X_KEY, x_layer, is_count_data=False),
             LayerField(REGISTRY_KEYS_VT.U_KEY, u_layer, is_count_data=False),
             ObsmField(REGISTRY_KEYS_VT.KNN_KEY, knn_layer),
-            ObsmField(REGISTRY_KEYS_VT.TS_KEY, ts_layer),
             CategoricalObsField(REGISTRY_KEYS_VT.BATCH_KEY, batch_key),
             CategoricalObsField(REGISTRY_KEYS_VT.LABELS_KEY, labels_key),
             NumericalObsField(REGISTRY_KEYS_VT.SIZE_FACTOR_KEY, size_factor_key, required=False),
             CategoricalJointObsField(REGISTRY_KEYS_VT.CAT_COVS_KEY, categorical_covariate_keys),
             NumericalJointObsField(REGISTRY_KEYS_VT.CONT_COVS_KEY, continuous_covariate_keys),
-        ]
+        ]   
         # register new fields for latent mode if needed
+        if ts_layer is not None:
+            anndata_fields.append(ObsmField(REGISTRY_KEYS_VT.TS_KEY, ts_layer))
+            
         latent_mode = _get_latent_adata_type(adata)
         if latent_mode is not None:
             anndata_fields += cls._get_latent_fields(latent_mode)

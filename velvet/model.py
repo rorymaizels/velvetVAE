@@ -8,10 +8,7 @@ from scipy.sparse import issparse
 import torch
 from torch import nn
 from scvi._compat import Literal
-from scvi._types import LatentDataType
 from scvi.data import AnnDataManager
-from scvi.data._constants import _ADATA_LATENT_UNS_KEY
-from scvi.data._utils import _get_latent_adata_type
 from scvi.data.fields import (
     CategoricalJointObsField,
     CategoricalObsField,
@@ -21,7 +18,7 @@ from scvi.data.fields import (
     ObsmField,
 )
 from scvi.model._utils import _init_library_size
-from scvi.model.base import ArchesMixin, BaseLatentModeModelClass, RNASeqMixin, VAEMixin
+from scvi.model.base import ArchesMixin, BaseModelClass, RNASeqMixin, VAEMixin
 from scvi.utils import setup_anndata_dsp
 
 from velvet.module import VelVAE, SplicingVelVAE
@@ -41,7 +38,7 @@ class Velvet(
     VAEMixin,
     ArchesMixin,
     ModifiedUnsupervisedTrainingMixin,
-    BaseLatentModeModelClass,
+    BaseModelClass,
     VelvetMixin,
     ModellingMixin,
 ):
@@ -234,41 +231,16 @@ class Velvet(
         if ts_layer is not None:
             anndata_fields.append(ObsmField(REGISTRY_KEYS_VT.TS_KEY, ts_layer))
 
-        # register new fields for latent mode if needed
-        latent_mode = _get_latent_adata_type(adata)
-        if latent_mode is not None:
-            anndata_fields += cls._get_latent_fields(latent_mode)
         adata_manager = AnnDataManager(fields=anndata_fields, setup_method_args=setup_method_args)
         adata_manager.register_fields(adata, **kwargs)
         cls.register_manager(adata_manager)
-
-    def _get_latent_adata_from_adata(
-        self,
-        mode: LatentDataType,
-        use_latent_qzm_key: str = "X_latent_qzm",
-        use_latent_qzv_key: str = "X_latent_qzv",
-    ):
-        pass  # TODO
-
-    @staticmethod
-    def _get_latent_fields(mode: LatentDataType):
-        pass  # TODO
-
-    def to_latent_mode(
-        self,
-        mode: LatentDataType = "dist",
-        use_latent_qzm_key: str = "X_latent_qzm",
-        use_latent_qzv_key: str = "X_latent_qzv",
-    ):
-        pass  # TODO
-
 
 class VelvetSplicing(
     RNASeqMixin,
     VAEMixin,
     ArchesMixin,
     ModifiedUnsupervisedTrainingMixin,
-    BaseLatentModeModelClass,
+    BaseModelClass,
     VelvetMixin,
     ModellingMixin,
 ):
@@ -452,30 +424,6 @@ class VelvetSplicing(
         # register new fields for latent mode if needed
         if ts_layer is not None:
             anndata_fields.append(ObsmField(REGISTRY_KEYS_VT.TS_KEY, ts_layer))
-            
-        latent_mode = _get_latent_adata_type(adata)
-        if latent_mode is not None:
-            anndata_fields += cls._get_latent_fields(latent_mode)
         adata_manager = AnnDataManager(fields=anndata_fields, setup_method_args=setup_method_args)
         adata_manager.register_fields(adata, **kwargs)
         cls.register_manager(adata_manager)
-
-    def _get_latent_adata_from_adata(
-        self,
-        mode: LatentDataType,
-        use_latent_qzm_key: str = "X_latent_qzm",
-        use_latent_qzv_key: str = "X_latent_qzv",
-    ):
-        pass  # TODO
-
-    @staticmethod
-    def _get_latent_fields(mode: LatentDataType):
-        pass  # TODO
-
-    def to_latent_mode(
-        self,
-        mode: LatentDataType = "dist",
-        use_latent_qzm_key: str = "X_latent_qzm",
-        use_latent_qzv_key: str = "X_latent_qzv",
-    ):
-        pass  # TODO

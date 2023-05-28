@@ -13,15 +13,14 @@ from torch.distributions import Normal
 from torch.distributions import kl_divergence as kl
 
 from scvi._compat import Literal
-from scvi._types import LatentDataType
 from scvi.distributions import NegativeBinomial, Poisson
-from scvi.module.base import BaseLatentModeModuleClass, LossOutput, auto_move_data
+from scvi.module.base import BaseModuleClass, LossOutput, auto_move_data
 from scvi.nn import DecoderSCVI, Encoder, LinearDecoderSCVI, one_hot
 
 torch.backends.cudnn.benchmark = True
 
 
-class VelVAE(BaseLatentModeModuleClass):
+class VelVAE(BaseModuleClass):
     """
     Variational Autoencoder (VAE) model with velocity modeling.
 
@@ -95,7 +94,6 @@ class VelVAE(BaseLatentModeModuleClass):
         library_log_means: Optional[np.ndarray] = None,
         library_log_vars: Optional[np.ndarray] = None,
         var_activation: Optional[Callable] = None,
-        latent_data_type: Optional[LatentDataType] = None,
         labelling_time: float = 2.0,
         neighborhood_loss: Literal["mse", "cs"] = "cs",
         neighborhood_space: Literal["latent_space", "gene_space", "none"] = "latent_space",
@@ -136,7 +134,6 @@ class VelVAE(BaseLatentModeModuleClass):
         self.n_labels = n_labels
         self.latent_distribution = latent_distribution
         self.encode_covariates = encode_covariates
-        self._latent_data_type = latent_data_type
         self.use_size_factor_key = use_size_factor_key
         self.use_observed_lib_size = use_size_factor_key or use_observed_lib_size
 
@@ -245,19 +242,9 @@ class VelVAE(BaseLatentModeModuleClass):
         cat_key = REGISTRY_KEYS_VT.CAT_COVS_KEY
         cat_covs = tensors[cat_key] if cat_key in tensors.keys() else None
 
-        if self.latent_data_type is None:
-            x = tensors[REGISTRY_KEYS_VT.X_KEY]
-            input_dict = dict(x=x, batch_index=batch_index, cont_covs=cont_covs, cat_covs=cat_covs)
-        else:
-            """
-            if self.latent_data_type == "dist":
-                qzm = tensors[REGISTRY_KEYS.LATENT_QZM_KEY]
-                qzv = tensors[REGISTRY_KEYS.LATENT_QZV_KEY]
-                input_dict = dict(qzm=qzm, qzv=qzv)
-            else:
-                raise ValueError(f"Unknown latent data type: {self.latent_data_type}")
-            """
-            raise ValueError(f"latent data type: {self.latent_data_type} - not yet implemented")
+        x = tensors[REGISTRY_KEYS_VT.X_KEY]
+        input_dict = dict(x=x, batch_index=batch_index, cont_covs=cont_covs, cat_covs=cat_covs)
+
         return input_dict
 
     def _get_generative_input(self, tensors, inference_outputs):
@@ -301,7 +288,7 @@ class VelVAE(BaseLatentModeModuleClass):
         return local_library_log_means, local_library_log_vars
 
     @auto_move_data
-    def _regular_inference(self, x, batch_index, cont_covs=None, cat_covs=None, n_samples=1):
+    def inference(self, x, batch_index, cont_covs=None, cat_covs=None, n_samples=1):
         """
         High level inference method.
         Runs the inference (encoder) model.
@@ -342,20 +329,6 @@ class VelVAE(BaseLatentModeModuleClass):
 
         outputs = dict(z=z, vz=vz, qz=qz, ql=ql, library=library)
         return outputs
-
-    def _cached_inference(self, qzm, qzv, n_samples=1):
-        """
-        if self.latent_data_type == "dist":
-            dist = Normal(qzm, qzv.sqrt())
-            # use dist.sample() rather than rsample because we aren't optimizing
-            # the z in latent/cached mode
-            untran_z = dist.sample() if n_samples == 1 else dist.sample((n_samples,))
-            z = self.z_encoder.z_transformation(untran_z)
-        else:
-            raise ValueError(f"Unknown latent data type: {self.latent_data_type}")
-        outputs = dict(z=z, qz_m=qzm, qz_v=qzv, ql=None, library=None)
-        return outputs"""
-        pass  # TODO
 
     @auto_move_data
     def generative(
@@ -555,7 +528,7 @@ class VelVAE(BaseLatentModeModuleClass):
             param.requires_grad = False
 
 
-class SplicingVelVAE(BaseLatentModeModuleClass):
+class SplicingVelVAE(BaseModuleClass):
     """
     Variational Autoencoder (VAE) model with velocity modeling.
 
@@ -625,7 +598,6 @@ class SplicingVelVAE(BaseLatentModeModuleClass):
         library_log_means: Optional[np.ndarray] = None,
         library_log_vars: Optional[np.ndarray] = None,
         var_activation: Optional[Callable] = None,
-        latent_data_type: Optional[LatentDataType] = None,
         neighborhood_loss: Literal["mse", "cs"] = "cs",
         neighborhood_space: Literal["latent_space", "gene_space", "none"] = "latent_space",
         gamma_mode: Literal["fixed", "learned"] = "learned",
@@ -662,7 +634,6 @@ class SplicingVelVAE(BaseLatentModeModuleClass):
         self.n_labels = n_labels
         self.latent_distribution = latent_distribution
         self.encode_covariates = encode_covariates
-        self._latent_data_type = latent_data_type
         self.use_size_factor_key = use_size_factor_key
         self.use_observed_lib_size = use_size_factor_key or use_observed_lib_size
 
@@ -753,7 +724,6 @@ class SplicingVelVAE(BaseLatentModeModuleClass):
             )
 
         self.vf = VectorField(latent_dim=n_latent, **vectorfield_kwargs)
-
         self.nc = NeighborhoodConstraint(X=transcriptome, **neighborhood_kwargs)
 
     def _get_inference_input(
@@ -768,18 +738,9 @@ class SplicingVelVAE(BaseLatentModeModuleClass):
         cat_key = REGISTRY_KEYS_VT.CAT_COVS_KEY
         cat_covs = tensors[cat_key] if cat_key in tensors.keys() else None
 
-        if self.latent_data_type is None:
-            x = tensors[REGISTRY_KEYS_VT.X_KEY]
-            input_dict = dict(x=x, batch_index=batch_index, cont_covs=cont_covs, cat_covs=cat_covs)
-        else:
-            """
-            if self.latent_data_type == "dist":
-                qzm = tensors[REGISTRY_KEYS.LATENT_QZM_KEY]
-                qzv = tensors[REGISTRY_KEYS.LATENT_QZV_KEY]
-                input_dict = dict(qzm=qzm, qzv=qzv)
-            else:
-                raise ValueError(f"Unknown latent data type: {self.latent_data_type}")
-            """
+        x = tensors[REGISTRY_KEYS_VT.X_KEY]
+        input_dict = dict(x=x, batch_index=batch_index, cont_covs=cont_covs, cat_covs=cat_covs)
+
         return input_dict
 
     def _get_generative_input(self, tensors, inference_outputs):
@@ -823,7 +784,7 @@ class SplicingVelVAE(BaseLatentModeModuleClass):
         return local_library_log_means, local_library_log_vars
 
     @auto_move_data
-    def _regular_inference(self, x, batch_index, cont_covs=None, cat_covs=None, n_samples=1):
+    def inference(self, x, batch_index, cont_covs=None, cat_covs=None, n_samples=1):
         """
         High level inference method.
         Runs the inference (encoder) model.
@@ -864,20 +825,6 @@ class SplicingVelVAE(BaseLatentModeModuleClass):
 
         outputs = dict(z=z, vz=vz, qz=qz, ql=ql, library=library)
         return outputs
-
-    def _cached_inference(self, qzm, qzv, n_samples=1):
-        """
-        if self.latent_data_type == "dist":
-            dist = Normal(qzm, qzv.sqrt())
-            # use dist.sample() rather than rsample because we aren't optimizing
-            # the z in latent/cached mode
-            untran_z = dist.sample() if n_samples == 1 else dist.sample((n_samples,))
-            z = self.z_encoder.z_transformation(untran_z)
-        else:
-            raise ValueError(f"Unknown latent data type: {self.latent_data_type}")
-        outputs = dict(z=z, qz_m=qzm, qz_v=qzv, ql=None, library=None)
-        return outputs"""
-        pass  # TODO
 
     @auto_move_data
     def generative(

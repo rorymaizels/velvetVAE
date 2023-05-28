@@ -9,25 +9,21 @@ from torch.distributions import kl_divergence as kl
 import torchsde
 
 from scvi.data import AnnDataManager
-from scvi.data._utils import _get_latent_adata_type
 from scvi.data.fields import (
     CategoricalJointObsField,
     CategoricalObsField,
     LayerField,
     NumericalJointObsField,
     NumericalObsField,
-    ObsmField,
-    StringUnsField,
 )
-from scvi.module.base import BaseLatentModeModuleClass, LossOutput
-from scvi.model.base import ArchesMixin, BaseLatentModeModelClass, RNASeqMixin, VAEMixin
+from scvi.module.base import BaseModuleClass, LossOutput
+from scvi.model.base import ArchesMixin, BaseModelClass, RNASeqMixin, VAEMixin
 
 from velvet.constants import REGISTRY_KEYS_SDE
 from velvet.mixins import VelvetMixin, SDETrainingMixin, SimulationMixin
-from velvet.submodule import SDE, MarkovProcess
 
 class VelvetSDE(
-    RNASeqMixin, VAEMixin, ArchesMixin, SDETrainingMixin, BaseLatentModeModelClass, VelvetMixin, SimulationMixin
+    RNASeqMixin, VAEMixin, ArchesMixin, SDETrainingMixin, BaseModelClass, VelvetMixin, SimulationMixin
 ):
     """
     A class for the VelvetSDE model, which includes various mixin classes for
@@ -104,28 +100,19 @@ class VelvetSDE(
         ]
 
         # register new fields for latent mode if needed
-        latent_mode = _get_latent_adata_type(adata)
-        if latent_mode is not None:
-            anndata_fields += cls._get_latent_fields(latent_mode)
         adata_manager = AnnDataManager(fields=anndata_fields, setup_method_args=setup_method_args)
         adata_manager.register_fields(adata, **kwargs)
         cls.register_manager(adata_manager)
 
-    def to_latent_mode(self) -> None:
-        """
-        Switch the VelvetSDE model to latent mode. Not yet implemented
-        """
-        pass
 
 
-class SDVAE(BaseLatentModeModuleClass):
+class SDVAE(BaseModuleClass):
     def __init__(
         self,
         adata: AnnData,
         prior_module: nn.Module,
         sde_module: nn.Module,
         markov_module: nn.Module,
-        latent_data_type: Optional[str] = None,
     ) -> None:
         """
         Initialize the SDVAE class.
@@ -146,7 +133,6 @@ class SDVAE(BaseLatentModeModuleClass):
         self.core = prior_module
         self.z_encoder = prior_module.z_encoder
         self.n_latent = prior_module.n_latent
-        self._latent_data_type = latent_data_type
 
     def _get_inference_input(
         self,
@@ -186,7 +172,7 @@ class SDVAE(BaseLatentModeModuleClass):
         input_dict = dict(z_sort=z_sort, init_idx=init_idx, init_cells=init_cells, cell_index=cell_index)
         return input_dict
 
-    def _regular_inference(
+    def inference(
         self,
         x,
         t,
@@ -196,7 +182,6 @@ class SDVAE(BaseLatentModeModuleClass):
         cat_covs=None,
     ):
         x_ = x
-        library = torch.log(x.sum(1)).unsqueeze(1)
         if self.core.log_variational:
             x_ = torch.log(1 + x_)
 

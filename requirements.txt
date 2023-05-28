@@ -1,3 +1,7 @@
+torch==2.*
+torchvision
+torchaudio
+scvi-tools==0.17.*
 scanpy==1.9.*
 scvelo==0.2.*
 anndata==0.8.0
@@ -6,8 +10,11 @@ matplotlib>=3.4
 pandas>=1.0
 scipy>=1.4
 scikit-misc==0.2.0
-tslearn==0.5.3.*
+tslearn==0.5.*
+plotly==5.10.*
 scikit-learn
 torchsde
 seaborn
+adjustText
 tqdm
+torchcubicspline @ git+https://github.com/patrick-kidger/torchcubicspline.git

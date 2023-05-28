@@ -1,7 +1,7 @@
 torch==2.*
 torchvision
 torchaudio
-scvi-tools==0.17.1
+scvi-tools==0.19.0
 scanpy==1.9.*
 scvelo==0.2.*
 anndata==0.8.0
@@ -17,4 +17,5 @@ torchsde
 seaborn
 adjustText
 tqdm
+ipykernel
 torchcubicspline @ git+https://github.com/patrick-kidger/torchcubicspline.git

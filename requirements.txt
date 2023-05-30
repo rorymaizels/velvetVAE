@@ -7,7 +7,7 @@ scvelo==0.2.*
 anndata==0.8.0
 numpy==1.23.5
 matplotlib>=3.4
-pandas>=1.0
+pandas==1.5.3
 scipy>=1.4
 scikit-misc==0.2.0
 tslearn==0.5.*

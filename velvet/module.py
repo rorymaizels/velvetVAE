@@ -89,7 +89,7 @@ class VelVAE(BaseModuleClass):
         use_linear_decoder: bool = True,
         use_size_factor_key: bool = False,
         use_observed_lib_size: bool = True,
-        use_similarity_graph: bool = True,
+        use_similarity_graph: bool = False,
         library_log_means: Optional[np.ndarray] = None,
         library_log_vars: Optional[np.ndarray] = None,
         var_activation: Optional[Callable] = None,
@@ -468,7 +468,7 @@ class VelVAE(BaseModuleClass):
             elif self.space == "latent_space":
                 z = inference_outputs["z"]
                 vz = inference_outputs["vz"]
-                zf = self._regular_inference(self.nc.X, self.nc.b)["qz"].loc
+                zf = self.inference(self.nc.X, self.nc.b)["qz"].loc
 
                 zc = z.clone().detach()
                 vzc = vz.clone().detach()
@@ -592,7 +592,7 @@ class SplicingVelVAE(BaseModuleClass):
         use_linear_decoder: bool = True,
         use_size_factor_key: bool = False,
         use_observed_lib_size: bool = True,
-        use_similarity_graph: bool = True,
+        use_similarity_graph: bool = False,
         library_log_means: Optional[np.ndarray] = None,
         library_log_vars: Optional[np.ndarray] = None,
         var_activation: Optional[Callable] = None,
@@ -958,7 +958,7 @@ class SplicingVelVAE(BaseModuleClass):
             elif self.space == "latent_space":
                 z = inference_outputs["z"]
                 vz = inference_outputs["vz"]
-                zf = self._regular_inference(self.nc.X, self.nc.b)["qz"].loc
+                zf = self.inference(self.nc.X, self.nc.b)["qz"].loc
 
                 zc = z.clone().detach()
                 vzc = vz.clone().detach()

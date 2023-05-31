@@ -49,7 +49,6 @@ class VelVAE(BaseModuleClass):
     - library_log_means: The mean of the log library sizes (default: None).
     - library_log_vars: The variance of the log library sizes (default: None).
     - var_activation: The activation function for the variance (default: None).
-    - latent_data_type: The type of latent data. Not yet implemented ("dist", None) (default: None).
     - labelling_time: The time for labeling, in hours (default: 2.0).
     - neighborhood_loss: The type of neighborhood loss to use, MSE or cosine similarity ("mse", "cs") (default: "cs").
     - neighborhood_space: The space for neighborhood constraints, none being off. ("latent_space", "gene_space", "none") (default: "latent_space").
@@ -557,7 +556,6 @@ class SplicingVelVAE(BaseModuleClass):
         library_log_means (Optional[np.ndarray]): The log means of the library size (default: None).
         library_log_vars (Optional[np.ndarray]): The log variances of the library size (default: None).
         var_activation (Optional[Callable]): The activation function for the variance (default: None).
-        latent_data_type (Optional[LatentDataType]): The data type of the latent space (default: None).
         neighborhood_loss (Literal["mse", "cs"]): The neighborhood loss function (default: "cs").
         neighborhood_space (Literal["latent_space", "gene_space", "none"]): The space for neighborhood computation (default: "latent_space").
         gamma_mode (Literal["fixed", "learned"]): The mode for the gamma model (default: "learned").

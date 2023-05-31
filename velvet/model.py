@@ -235,7 +235,7 @@ class Velvet(
         adata_manager.register_fields(adata, **kwargs)
         cls.register_manager(adata_manager)
 
-class VelvetSplicing(
+class Svelvet(
     RNASeqMixin,
     VAEMixin,
     ArchesMixin,

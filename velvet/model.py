@@ -97,7 +97,6 @@ class Velvet(
         biophysical_model: Literal["simple", "full"] = "full",
         gamma_mode: Literal["fixed", "learned"] = "learned",
         labelling_time: float = 2.0,
-        use_similarity_graph: bool = True,
         neighborhood_kwargs={},
         vectorfield_kwargs={},
         **model_kwargs,
@@ -111,11 +110,9 @@ class Velvet(
         )
         n_batch = self.summary_stats.n_batch
         use_size_factor_key = REGISTRY_KEYS_VT.SIZE_FACTOR_KEY in self.adata_manager.data_registry
+        use_similarity_graph = REGISTRY_KEYS_VT.TS_KEY in self.adata_manager.data_registry
         library_log_means, library_log_vars = None, None
         if not use_size_factor_key:
-            if self.latent_data_type is not None:
-                raise ValueError("Latent mode not supported when use_size_factor_key is False")
-
             library_log_means, library_log_vars = _init_library_size(self.adata_manager, n_batch)
 
         self.labelling_time = labelling_time
@@ -143,7 +140,6 @@ class Velvet(
             use_linear_decoder=linear_decoder,
             library_log_means=library_log_means,
             library_log_vars=library_log_vars,
-            latent_data_type=self.latent_data_type,
             neighborhood_space=neighborhood_space,
             biophysical_model=biophysical_model,
             gamma_mode=gamma_mode,
@@ -299,7 +295,6 @@ class Svelvet(
         gamma_mode: Literal["fixed", "learned"] = "learned",
         neighborhood_kwargs={},
         vectorfield_kwargs={},
-        use_similarity_graph: bool = True,
         **model_kwargs,
     ):
         super().__init__(adata)
@@ -311,11 +306,9 @@ class Svelvet(
         )
         n_batch = self.summary_stats.n_batch
         use_size_factor_key = REGISTRY_KEYS_VT.SIZE_FACTOR_KEY in self.adata_manager.data_registry
+        use_similarity_graph = REGISTRY_KEYS_VT.TS_KEY in self.adata_manager.data_registry
         library_log_means, library_log_vars = None, None
         if not use_size_factor_key:
-            if self.latent_data_type is not None:
-                raise ValueError("Latent mode not supported when use_size_factor_key is False")
-
             library_log_means, library_log_vars = _init_library_size(self.adata_manager, n_batch)
 
         self.gamma_mode = gamma_mode
@@ -340,7 +333,6 @@ class Svelvet(
             use_linear_decoder=linear_decoder,
             library_log_means=library_log_means,
             library_log_vars=library_log_vars,
-            latent_data_type=self.latent_data_type,
             neighborhood_space=neighborhood_space,
             gamma_mode=gamma_mode,
             neighborhood_kwargs=neighborhood_kwargs,

@@ -123,7 +123,6 @@ class SDVAE(BaseModuleClass):
             sde_module (nn.Module): nSDE module for the model.
             markov_module (nn.Module): Markov module for the model.
             include_vel_loss (bool, optional): Flag to include velocity loss. Default is False.
-            latent_data_type (str, optional): Type of latent data. Default is None.
         """
         super().__init__()
         # core components
@@ -148,19 +147,15 @@ class SDVAE(BaseModuleClass):
         cat_key = REGISTRY_KEYS_SDE.CAT_COVS_KEY
         cat_covs = tensors[cat_key] if cat_key in tensors.keys() else None
 
-        if self.core.latent_data_type is None:
-            x = tensors[REGISTRY_KEYS_SDE.X_KEY]
-            input_dict = dict(
-                x=x,
-                t=time_index,
-                cell_index=cell_index,
-                batch_index=batch_index,
-                cont_covs=cont_covs,
-                cat_covs=cat_covs,
-            )
-        else:
-            pass
-
+        x = tensors[REGISTRY_KEYS_SDE.X_KEY]
+        input_dict = dict(
+            x=x,
+            t=time_index,
+            cell_index=cell_index,
+            batch_index=batch_index,
+            cont_covs=cont_covs,
+            cat_covs=cat_covs,
+        )
         return input_dict
 
     def _get_generative_input(self, tensors, inference_outputs):

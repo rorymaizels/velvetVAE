@@ -316,7 +316,7 @@ class MarkovProcess:
         T = T / torch.abs(T).sum(1)[:, None]
 
         T_expanded = torch.sparse_coo_tensor(
-            indices=torch.vstack((torch.arange(k.shape[0]).repeat_interleave(k.shape[1]), k.flatten())),
+            indices=torch.vstack((torch.arange(k.shape[0], device=self.device).repeat_interleave(k.shape[1]), k.flatten())),
             values=T.flatten(),
         ).to_dense()
 

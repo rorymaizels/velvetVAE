@@ -147,7 +147,7 @@ class MarkovProcess:
         use_spline: bool = False,
         terminal_state_key: Optional[str] = None,
         deterministic_scaling: float = 10.0,
-        use_similarity: bool = True,
+        use_similarity: bool = False,
         similarity_strength: float = 0.2,
     ) -> None:
         """
@@ -303,9 +303,9 @@ class MarkovProcess:
         Returns:
             Velocity transition matrix.
         """
-        x = torch.tensor(subdata.layers["total"])
-        v = torch.tensor(subdata.layers["velocity"])
-        k = torch.tensor(subdata.obsm["knn_index"])
+        x = torch.tensor(subdata.layers["total"], device=self.device)
+        v = torch.tensor(subdata.layers["velocity"], device=self.device)
+        k = torch.tensor(subdata.obsm["knn_index"], device=self.device)
 
         deltas = x[k.to(torch.long)] - x.unsqueeze(1)
         v_unsq = v.unsqueeze(1)

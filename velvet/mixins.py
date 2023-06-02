@@ -433,6 +433,75 @@ class ModellingMixin():
         gene_idx = [np.where(self.adata.var_names==gene)[0][0] for gene in valid_genes]
         return gex_numpy[:,:,gene_idx].squeeze()
 
+    def optimise_noise(
+        self,
+        n_neighbors: int,
+        n_jumps: int,
+        n_steps: int,
+        t_max: int,
+        dt: float,
+        n_sims: int = 20,
+        n_cells: Optional[int] = None,
+        ns_linspace: List[float] = [0.05, 0.5, 20],
+    ) -> int:
+        """
+        Compares the variance of Markov simulations with SDE simulations to find an appropriate noise
+        level for nSDE training
+
+        Args:
+            model (nn.Module): The model to be optimised.
+            n_neighbors (int): The number of neighbors for the Markov Process.
+            n_jumps (int): The number of jumps for the Markov Process.
+            n_steps (int): The number of steps for the Markov Process and SDE simulations.
+            t_max (int): The maximum time for SDE simulations.
+            dt (float): The time step for SDE simulations.
+            n_sims (int, optional): The number of simulations. Default is 20.
+            n_cells (int, optional): The number of cells. If None, it defaults to 2000. Default is None.
+            ns_linspace (list, optional): The linspace for noise scalar. Default is [0.05, 0.5, 20].
+
+        Returns:
+            int: The optimised noise for the model.
+        """
+        if n_cells is None:
+            n_cells = 2000
+        self.get_latent_dynamics(return_data=False)
+
+        mp = MarkovProcess(
+            self,
+            n_neighbors=n_neighbors,
+            use_space="latent_space",
+            use_spline=True,
+        )
+
+        z = self.adata.obsm["X_z"]
+        z = torch.tensor(z, device=self.device)
+        init = torch.randperm(z.shape[0])[:n_cells]
+        mp_sims = torch.zeros(n_sims, *mp.random_walk(z, init, n_jumps, n_steps, deterministic=False).shape)
+        for i in range(n_sims):
+            mp_sims[i] = mp.random_walk(z, init, n_jumps, n_steps, deterministic=False)
+        y = mp_sims[:, 1:, :, :].var(0)
+
+        results = []
+        tests = []
+        for ns in tqdm(torch.linspace(*ns_linspace)):
+            tests.append(ns)
+            sde = SDE(
+                self.module.n_latent,
+                prior_vectorfield=self.module.vf,
+                noise_scalar=ns,
+            )
+            initial_cells = z[init]
+            timespan = torch.linspace(0, t_max, n_steps, device=self.device)
+            sde_sims = torch.zeros_like(mp_sims)
+            with torch.no_grad():
+                for i in range(n_sims):
+                    sde_sims[i] = torchsde.sdeint_adjoint(
+                        sde, initial_cells, timespan, method="midpoint", dt=dt
+                    ).permute(1, 0, 2)
+                x = sde_sims[:, 1:, :, :].var(0)
+                results.append(torch.nn.MSELoss()(x, y))
+        return tests[int(torch.hstack(results).argmin())]
+
 
 class SimulationMixin:
     def simulate(
@@ -543,75 +612,6 @@ class SimulationMixin:
             return predictions, ts_kmc
         else:
             return predictions
-
-    def optimise_noise(
-        self,
-        n_neighbors: int,
-        n_jumps: int,
-        n_steps: int,
-        t_max: int,
-        dt: float,
-        n_sims: int = 20,
-        n_cells: Optional[int] = None,
-        ns_linspace: List[float] = [0.05, 0.5, 20],
-    ) -> int:
-        """
-        Compares the variance of Markov simulations with SDE simulations to find an appropriate noise
-        level for nSDE training
-
-        Args:
-            model (nn.Module): The model to be optimised.
-            n_neighbors (int): The number of neighbors for the Markov Process.
-            n_jumps (int): The number of jumps for the Markov Process.
-            n_steps (int): The number of steps for the Markov Process and SDE simulations.
-            t_max (int): The maximum time for SDE simulations.
-            dt (float): The time step for SDE simulations.
-            n_sims (int, optional): The number of simulations. Default is 20.
-            n_cells (int, optional): The number of cells. If None, it defaults to 2000. Default is None.
-            ns_linspace (list, optional): The linspace for noise scalar. Default is [0.05, 0.5, 20].
-
-        Returns:
-            int: The optimised noise for the model.
-        """
-        if n_cells is None:
-            n_cells = 2000
-        self.get_latent_dynamics(return_data=False)
-
-        mp = MarkovProcess(
-            self,
-            n_neighbors=n_neighbors,
-            use_space="latent_space",
-            use_spline=True,
-        )
-
-        z = self.adata.obsm["X_z"]
-        z = torch.tensor(z, device=self.device)
-        init = torch.randperm(z.shape[0])[:n_cells]
-        mp_sims = torch.zeros(n_sims, *mp.random_walk(z, init, n_jumps, n_steps, deterministic=False).shape)
-        for i in range(n_sims):
-            mp_sims[i] = mp.random_walk(z, init, n_jumps, n_steps, deterministic=False)
-        y = mp_sims[:, 1:, :, :].var(0)
-
-        results = []
-        tests = []
-        for ns in tqdm(torch.linspace(*ns_linspace)):
-            tests.append(ns)
-            sde = SDE(
-                self.module.n_latent,
-                prior_vectorfield=self.module.vf,
-                noise_scalar=ns,
-            )
-            initial_cells = z[init]
-            timespan = torch.linspace(0, t_max, n_steps, device=self.device)
-            sde_sims = torch.zeros_like(mp_sims)
-            with torch.no_grad():
-                for i in range(n_sims):
-                    sde_sims[i] = torchsde.sdeint_adjoint(
-                        sde, initial_cells, timespan, method="midpoint", dt=dt
-                    ).permute(1, 0, 2)
-                x = sde_sims[:, 1:, :, :].var(0)
-                results.append(torch.nn.MSELoss()(x, y))
-        return tests[int(torch.hstack(results).argmin())]
 
 
 class ModifiedTrainingPlan(TrainingPlan):

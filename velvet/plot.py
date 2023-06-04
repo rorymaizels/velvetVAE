@@ -384,7 +384,6 @@ def compare_simulation_noise(
     n_markov_steps: int,
     n_neighbors: int,
     n_tests: int = 10,
-    beginning_pct: int = 30,
     components: List[int] = [0, 1],
     cell_color: Optional[str] = None,
     cell_size: int = 200,
@@ -407,7 +406,6 @@ def compare_simulation_noise(
         n_markov_steps: Number of jumps in the Markov simulation.
         n_neighbors: Number of neighbors to consider in the Markov simulation.
         n_tests: Number of times the whole comparison process is repeated.
-        beginning_pct: Percentage of the initial time points to consider for the simulation.
         components: The PCA components to consider for the plot.
         cell_color: The color of the scatter points.
         cell_size: The size of the scatter points.
@@ -422,13 +420,6 @@ def compare_simulation_noise(
     """
     z = model.adata.obsm["X_z"]
     z = torch.tensor(z, device=model.device)
-
-    t = torch.tensor(model.adata.obs.t, device=model.device).squeeze()
-
-    time_index = torch.argsort(t)
-
-    z_sorted = z[time_index, :]
-    t_sorted = t[time_index]
 
     if mp is None:
         mp = MarkovProcess(
@@ -446,19 +437,17 @@ def compare_simulation_noise(
     fig, axes = create_subplots(n_tests)
 
     for j in range(n_tests):
-        valid_indices = int((beginning_pct / 100) * z.shape[0])
-        sorted_indices = torch.randperm(valid_indices)[:1]
-        cell_indices = time_index[sorted_indices]
+        cell_index = torch.randperm(z.shape[0])[:1]
 
         mtrajectories = torch.zeros(n_steps, n_repeats, z.shape[1])
         strajectories = torch.zeros(n_steps, n_repeats, z.shape[1])
 
         for i in range(n_repeats):
             mtrajectories[:, i, :] = mp.random_walk(
-                z=z, initial_states=cell_indices, n_jumps=n_markov_steps, n_steps=n_steps, deterministic=det
+                z=z, initial_states=cell_index, n_jumps=n_markov_steps, n_steps=n_steps, deterministic=det
             ).squeeze(1)
 
-        initial_cells = z[cell_indices]
+        initial_cells = z[cell_index]
         initial_cells = initial_cells.repeat(n_repeats, 1)
 
         timespan = torch.linspace(0, t_max, n_steps, device=z.device)

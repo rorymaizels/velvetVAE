@@ -47,7 +47,7 @@ class VelvetSDE(
         super().__init__(model.adata)
 
         self.prior_model = model
-        use_time = REGISTRY_KEYS_VT.TIME_KEY in self.adata_manager.data_registry
+        use_time = REGISTRY_KEYS_SDE.TIME_KEY in self.adata_manager.data_registry
 
         self.module = SDVAE(
             adata=model.adata, 

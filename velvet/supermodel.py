@@ -47,9 +47,15 @@ class VelvetSDE(
         super().__init__(model.adata)
 
         self.prior_model = model
+        use_time = REGISTRY_KEYS_VT.TIME_KEY in self.adata_manager.data_registry
 
         self.module = SDVAE(
-            adata=model.adata, prior_module=model.module, sde_module=sde_module, markov_module=markov_module, **kwargs
+            adata=model.adata, 
+            prior_module=model.module, 
+            sde_module=sde_module, 
+            markov_module=markov_module,
+            use_time=use_time, 
+            **kwargs
         )
 
         self._model_summary_string = "Velvet SDE model based on VAE model"
@@ -113,6 +119,7 @@ class SDVAE(BaseModuleClass):
         prior_module: nn.Module,
         sde_module: nn.Module,
         markov_module: nn.Module,
+        use_time: bool = False,
     ) -> None:
         """
         Initialize the SDVAE class.
@@ -132,13 +139,18 @@ class SDVAE(BaseModuleClass):
         self.core = prior_module
         self.z_encoder = prior_module.z_encoder
         self.n_latent = prior_module.n_latent
+        self.use_time = use_time
 
     def _get_inference_input(
         self,
         tensors,
     ):
         batch_index = tensors[REGISTRY_KEYS_SDE.BATCH_KEY]
-        time_index = tensors[REGISTRY_KEYS_SDE.TIME_KEY]
+        if self.use_time:
+            time_index = tensors[REGISTRY_KEYS_SDE.TIME_KEY]
+        else:
+            time_index = None
+
         cell_index = tensors[REGISTRY_KEYS_SDE.INDEX_KEY]
 
         cont_key = REGISTRY_KEYS_SDE.CONT_COVS_KEY
@@ -195,7 +207,11 @@ class SDVAE(BaseModuleClass):
 
         index_sort = cell_index.squeeze().argsort()
         z_sort = z[index_sort, :]
-        t_sort = t[index_sort, :]
+        if self.use_time:
+            t_sort = t[index_sort, :]
+        else:
+            t_sort = None
+
         init_idx, init_cells = self.select_initial_states(z_sort, t_sort)
 
         outputs = dict(z_sort=z_sort, init_idx=init_idx, init_cells=init_cells, cell_index=cell_index)
@@ -272,7 +288,7 @@ class SDVAE(BaseModuleClass):
         kld = kl(pxs, pxm).sum(-1)
         return kld
 
-    def select_initial_states(self, z: torch.Tensor, t: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def select_initial_states(self, z: torch.Tensor, t):
         """
         Select initial states for simulation.
 
@@ -283,17 +299,17 @@ class SDVAE(BaseModuleClass):
         Returns:
             tuple: Tuple containing indices of selected initial cells and their corresponding cells.
         """
-        time_index = torch.argsort(t.squeeze())
-        z_timesorted = z[time_index, :]
-
-        if self.beginning_pct:
+        if self.use_time:
+            time_index = torch.argsort(t.squeeze())
+            z_timesorted = z[time_index, :]
             valid_indices = int((self.beginning_pct / 100) * z.shape[0])
+            initial_indices = torch.randperm(valid_indices)[: self.n_trajectories]
+            initial_cells = z_timesorted[initial_indices, :]
+            chosen_cell_indices = time_index[initial_indices]
         else:
             valid_indices = z.shape[0]
-
-        initial_indices = torch.randperm(valid_indices)[: self.n_trajectories]
-        initial_cells = z_timesorted[initial_indices, :]
-        chosen_cell_indices = time_index[initial_indices]
+            chosen_cell_indices = torch.randperm(valid_indices)[: self.n_trajectories]
+            initial_cells = z[chosen_cell_indices, :]
 
         repeated_indices = chosen_cell_indices.repeat_interleave(self.n_simulations)
         repeated_cells = initial_cells.repeat_interleave(self.n_simulations, dim=0)

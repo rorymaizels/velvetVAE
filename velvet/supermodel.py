@@ -303,12 +303,12 @@ class SDVAE(BaseModuleClass):
             time_index = torch.argsort(t.squeeze())
             z_timesorted = z[time_index, :]
             valid_indices = int((self.beginning_pct / 100) * z.shape[0])
-            initial_indices = torch.randperm(valid_indices)[: self.n_trajectories]
+            initial_indices = torch.randperm(valid_indices, device='cuda')[: self.n_trajectories]
             initial_cells = z_timesorted[initial_indices, :]
             chosen_cell_indices = time_index[initial_indices]
         else:
             valid_indices = z.shape[0]
-            chosen_cell_indices = torch.randperm(valid_indices)[: self.n_trajectories]
+            chosen_cell_indices = torch.randperm(valid_indices, device='cuda')[: self.n_trajectories]
             initial_cells = z[chosen_cell_indices, :]
 
         repeated_indices = chosen_cell_indices.repeat_interleave(self.n_simulations)

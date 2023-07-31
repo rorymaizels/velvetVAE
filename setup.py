@@ -11,12 +11,12 @@ with open("requirements.txt", encoding="UTF-8") as f:
     required = f.read().splitlines()
 
 setup(
-    name="velvet",
+    name="velvet-dynamics",
     version=VERSION,
-    description="Velocity modelling",
+    description="Deep generative modelling of developmental trajectories from temporal transcriptomics",
     long_description=readme,
     long_description_content_type="text/markdown",
-    keywords=[],
+    keywords=['single-cell','transcriptomics','velocity','dynamics','generative'],
     author="Rory J. Maizels",
     author_email="rory.maizels@crick.ac.uk",
     url="https://github.com/rorymaizels/velvet",

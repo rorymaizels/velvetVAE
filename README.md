@@ -1,6 +1,8 @@
-![](docs/velvet.png)
+<p align="center">
+  <img height="150" src="https://github.com/rorymaizels/velvet/blob/main/docs/%E2%80%8Evelvet.png" />
+</p>
 
-## **Velvet**: deep dynamical modelling from temporal transcriptomics.**
+## **Velvet**: deep dynamical modelling from temporal transcriptomics.
 
 Analysis software for [Maizels et al, 2023](https://www.biorxiv.org/content/10.1101/2023.07.06.547989v1).
 

@@ -4,7 +4,9 @@
 
 ## **Velvet**: deep dynamical modelling from temporal transcriptomics.
 
-Analysis software for [Maizels et al, 2023](https://www.biorxiv.org/content/10.1101/2023.07.06.547989v1).
+Analysis software for modelling dynamics of developing systems as neural stochastic differential equation (nSDE) systems using deep generative modelling and time-resolved scRNA-seq data (such as metabolic labelling).
+
+For more details see the pre-print: [Maizels et al, 2023](https://www.biorxiv.org/content/10.1101/2023.07.06.547989v1).
 
 This package is under active development: it will soon be available on pip with documentation and tutorials.
 

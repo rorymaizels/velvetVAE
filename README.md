@@ -23,7 +23,7 @@ pip install git+https://github.com/rorymaizels/velvet
 
 ## Usage
 
-Until tutorials and documentation are completed, demonstration of how to use velvet can be found in the code reproducing the analysis from [Maizels et al, 2023](https://www.biorxiv.org/content/10.1101/2023.07.06.547989v1) is available [here](https://github.com/rorymaizels/Maizels2023aa). In particular, useful notebooks may include:
+Until tutorials and documentation are completed, demonstration of how to use velvet can be found in the code reproducing the analysis from [Maizels et al, 2023](https://www.biorxiv.org/content/10.1101/2023.07.06.547989v1), available [here](https://github.com/rorymaizels/Maizels2023aa). In particular, useful notebooks may include:
 - [Basic visualisation of velocity dynamics using velvet](https://github.com/rorymaizels/Maizels2023aa/blob/main/analysis/A2.0_velvet_visualisation.ipynb)
 - [Benchmarking code with standard pipeline for velvet](https://github.com/rorymaizels/Maizels2023aa/blob/main/analysis/A2.35_velvet_quantification.ipynb)
 - [Benchmarking code with standard pipeline for svelvet (with splicing data)](https://github.com/rorymaizels/Maizels2023aa/blob/main/analysis/A2.36_svelvet_quantification.ipynb)

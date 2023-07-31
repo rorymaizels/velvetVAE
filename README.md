@@ -10,7 +10,7 @@ For more details see the pre-print: [Maizels et al, 2023](https://www.biorxiv.or
 
 This package is under active development: it will soon be available on pip with documentation and tutorials.
 
-![](docs/fig.png)
+![](docs/figure.png)
 
 ## Installation
 

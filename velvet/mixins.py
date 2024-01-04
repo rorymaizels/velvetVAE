@@ -40,7 +40,7 @@ class VelvetMixin:
         self,
         total: np.ndarray,
         new: np.ndarray,
-        t: float = 2.0,
+        t = None,
         model: str = "full",
         gamma_min: float = 0.01,
         gamma_max: float = 10,
@@ -55,7 +55,7 @@ class VelvetMixin:
         new : np.ndarray
             The new count data.
         t : float, optional
-            Time variable for the full model, default is 2.0.
+            Time variable for the full model, equivalent to labelling duration.
         model : str, optional
             The model to be used, default is 'full'. If 'simple', gamma = K. If 'full', gamma is calculated with time variable t.
         gamma_min : float, optional
@@ -68,16 +68,29 @@ class VelvetMixin:
         gamma : np.ndarray
             The calculated gamma value(s).
         """
-        # Linear Regression model with percentile clip at 5 and 95
-        lr = scveloLR(fit_intercept=False, percentile=[5, 95])
-        lr.fit(total, new)
-        K = lr.coef_
-
-        if model == "simple":
-            gamma = K
-        elif model == "full":
-            gamma = -np.log(1 - K) / t
-            gamma = np.clip(gamma, gamma_min, gamma_max)
+        if self.variable_labelling and model=='full':
+            # learn a different gamma estimate per labelling duration, and average
+            t = np.array(t).reshape(-1, 1)
+            gammas = np.zeros((len(np.unique(t)), total.shape[1]))
+            for i, ti in enumerate(np.unique(t)):
+                tot_i = total[t.flatten()==ti]
+                new_i = new[t.flatten()==ti]
+                lr = scveloLR(fit_intercept=False, percentile=[5,95])
+                lr.fit(tot_i, new_i)
+                Ki = lr.coef_
+                gamma_i = -np.log(1 - Ki) / ti
+                gamma_i = np.clip(gamma_i, gamma_min, gamma_max)
+                gammas[i] = gamma_i
+            gamma = np.mean(gammas, axis=0) 
+        else:
+            lr = scveloLR(fit_intercept=False, percentile=[5,95])
+            lr.fit(total, new)
+            K = lr.coef_
+            if model=='simple':
+                gamma = K
+            elif model=='full':
+                gamma = -np.log(1 - K) / t
+                gamma = np.clip(gamma, gamma_min, gamma_max)
         return gamma
 
     def find_gamma_splicing(

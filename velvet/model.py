@@ -96,7 +96,7 @@ class Velvet(
         neighborhood_space: Literal["latent_space", "gene_space", "none"] = "latent_space",
         biophysical_model: Literal["simple", "full"] = "full",
         gamma_mode: Literal["fixed", "learned"] = "learned",
-        labelling_time: float = 2.0,
+        labelling_time = None,
         neighborhood_kwargs={},
         vectorfield_kwargs={},
         **model_kwargs,
@@ -175,10 +175,21 @@ class Velvet(
         new = self.adata_manager.get_from_registry("N")
         new = new.A if issparse(new) else new
 
+        if REGISTRY_KEYS_VT.TIME_KEY in self.adata_manager.data_registry:
+            t = self.adata_manager.get_from_registry(REGISTRY_KEYS_VT.TIME_KEY)
+            self.variable_labelling = True
+        elif self.labelling_time is not None:
+            t = self.labelling_time
+            self.variable_labelling = False
+        else:
+            raise ValueError(
+                "Please supply labelling time either in setup_anndata or as argument to model instantiation."
+            )
+            
         gamma_numpy = self.find_gamma(
-            total=total, new=new, t=self.labelling_time, model=self.biophysical_model, **gamma_kwargs
+            total=total, new=new, t=t, model=self.biophysical_model, **gamma_kwargs
         )
-        gamma = torch.tensor(gamma_numpy, device=torch_device)
+        gamma = torch.tensor(gamma_numpy, device=torch_device, dtype=torch.float32)
 
         if self.gamma_mode == "learned":
             self.module.loggamma = nn.Parameter(gamma.log())
@@ -194,6 +205,7 @@ class Velvet(
         x_layer: Optional[str] = None,
         n_layer: Optional[str] = None,
         knn_layer: Optional[str] = None,
+        time_key: Optional[str] = None,
         ts_layer: Optional[str] = None,
         batch_key: Optional[str] = None,
         labels_key: Optional[str] = None,
@@ -226,6 +238,10 @@ class Velvet(
         ]
         if ts_layer is not None:
             anndata_fields.append(ObsmField(REGISTRY_KEYS_VT.TS_KEY, ts_layer))
+        if time_key is not None:
+            anndata_fields.append(
+                NumericalObsField(REGISTRY_KEYS_VT.TIME_KEY, time_key, required=False)
+            )   
 
         adata_manager = AnnDataManager(fields=anndata_fields, setup_method_args=setup_method_args)
         adata_manager.register_fields(adata, **kwargs)

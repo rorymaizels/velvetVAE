@@ -5,8 +5,9 @@ class _REGISTRY_KEYS_VT(NamedTuple):
     X_KEY: str = "X"  # total
     N_KEY: str = "N"  # new
     U_KEY: str = "U"  # unspliced (for splicing variant of model)
-    KNN_KEY: str = "knn"  # indices of kNNs
-    TS_KEY: str = "ts"
+    KNN_KEY: str = "knn"  #indices of kNNs
+    TIME_KEY: str = "t" #labelling duration
+    TS_KEY: str = "ts" #transition graph
     BATCH_KEY: str = "batch"
     LABELS_KEY: str = "labels"
     CAT_COVS_KEY: str = "extra_categorical_covs"

@@ -93,7 +93,7 @@ class VelVAE(BaseModuleClass):
         library_log_means: Optional[np.ndarray] = None,
         library_log_vars: Optional[np.ndarray] = None,
         var_activation: Optional[Callable] = None,
-        labelling_time: float = 2.0,
+        labelling_time = None,
         neighborhood_loss: Literal["mse", "cs"] = "cs",
         neighborhood_space: Literal["latent_space", "gene_space", "none"] = "latent_space",
         biophysical_model: Literal["simple", "full"] = "full",
@@ -261,11 +261,15 @@ class VelVAE(BaseModuleClass):
 
         size_factor_key = REGISTRY_KEYS_VT.SIZE_FACTOR_KEY
         size_factor = torch.log(tensors[size_factor_key]) if size_factor_key in tensors.keys() else None
+        
+        time_key = REGISTRY_KEYS_VT.TIME_KEY
+        t = tensors[time_key] if time_key in tensors.keys() else self.t
 
         input_dict = dict(
             z=z,
             vz=vz,
             library=library,
+            t=t,
             batch_index=batch_index,
             y=y,
             cont_covs=cont_covs,
@@ -331,7 +335,7 @@ class VelVAE(BaseModuleClass):
 
     @auto_move_data
     def generative(
-        self, z, vz, library, batch_index, cont_covs=None, cat_covs=None, size_factor=None, y=None, transform_batch=None
+        self, z, vz, library, t, batch_index, cont_covs=None, cat_covs=None, size_factor=None, y=None, transform_batch=None
     ):
         """Runs the generative model."""
         if cat_covs is not None:
@@ -381,7 +385,7 @@ class VelVAE(BaseModuleClass):
         vel = px_rate_future - px_rate
 
         if self.bmode == "full":
-            t, g = self.t, self.loggamma.exp()
+            g = self.loggamma.exp()
             new = ((1 - (-t * g).exp()) / g) * (vel + g * px_rate)
             new = torch.clip(new, 0, 100)
             new = torch.nan_to_num(new, nan=0, neginf=0, posinf=0)

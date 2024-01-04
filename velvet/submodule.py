@@ -1,5 +1,6 @@
 """components used for Velvet module and VelvetSDE"""
 from velvet.preprocessing import neighborhood
+from velvet.spline import natural_cubic_spline_coeffs, NaturalCubicSpline
 
 from typing import Optional, List
 
@@ -17,8 +18,6 @@ import anndata as ann
 from sklearn.decomposition import PCA
 from scipy.spatial import Delaunay
 from tqdm import tqdm
-
-from torchcubicspline import natural_cubic_spline_coeffs, NaturalCubicSpline
 
 from torch import nn, Tensor
 import torch

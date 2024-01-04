@@ -21,4 +21,3 @@ tqdm
 ipykernel
 pymde
 leidenalg
-torchcubicspline @ git+https://github.com/patrick-kidger/torchcubicspline.git

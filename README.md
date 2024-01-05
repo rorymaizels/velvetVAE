@@ -16,9 +16,7 @@ This package is under active development: it will soon be available on pip with 
 
 Currently, velvet can be installed as follows:
 ```
-conda create -n velvet_env python=3.9
-conda activate velvet_env
-pip install git+https://github.com/rorymaizels/velvet
+pip install git+https://github.com/rorymaizels/velvet --user
 ```
 
 ## Usage

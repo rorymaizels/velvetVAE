@@ -190,6 +190,14 @@ class VelvetMixin:
         X = self.adata_manager.get_from_registry("X")
         X = X.A if issparse(X) else X
 
+        if "t" in self.adata_manager.data_registry:
+            t = self.adata_manager.get_from_registry("t")
+        elif self.labelling_time is not None:
+            t = self.labelling_time
+        else:
+            print("No labelling time information supplied. Assumed to be 2 hours.")
+            t = 2.0
+
         torch_device = "cuda" if torch.cuda.is_available() else "cpu"
         x = torch.tensor(X, device=torch_device)
         b = torch.arange(X.shape[0], device=torch_device)
@@ -197,8 +205,7 @@ class VelvetMixin:
         # Use the model to infer the state and generate the output
         with torch.no_grad():
             inf = self.module.inference(x, b)
-
-            gen = self.module.generative(inf["z"], inf["vz"], inf["library"], b)
+            gen = self.module.generative(inf["z"], inf["vz"], inf["library"], t, b)
 
         if numpy:
             return gen["vel"].detach().cpu().numpy()
@@ -225,6 +232,14 @@ class VelvetMixin:
 
         torch_device = "cuda" if torch.cuda.is_available() else "cpu"
 
+        if "t" in self.adata_manager.data_registry:
+            t = self.adata_manager.get_from_registry("t")
+        elif self.labelling_time is not None:
+            t = self.labelling_time
+        else:
+            print("No labelling time information supplied. Assumed to be 2 hours.")
+            t = 2.0
+
         x = torch.tensor(X, device=torch_device)
         b = torch.arange(X.shape[0], device=torch_device)
 
@@ -237,13 +252,11 @@ class VelvetMixin:
             for i in trange(n_samples):
                 # Get inferred state
                 inf = self.module.inference(x, b)
-
                 # Generate output
-                gen = self.module.generative(inf["z"], inf["vz"], inf["library"], b)
+                gen = self.module.generative(inf["z"], inf["vz"], inf["library"], t, b)
                 # Assign velocities
                 latent_velocity[i] = inf["vz"]
                 posterior_velocity[i] = gen["vel"]
-
         return latent_velocity, posterior_velocity
 
     def calculate_cellwise_uncertainty(self, log: bool = True) -> "AnnData":

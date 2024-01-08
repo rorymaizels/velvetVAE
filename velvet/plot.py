@@ -136,7 +136,7 @@ def pca_contributions(
     dpi: int = 150,
     components: List[int] = [0, 1],
     show: bool = True,
-    plot_velocity: bool = True,
+    plot_velocity: bool = False,
     color: Optional[str] = None,
     palette: Optional[str] = None,
     legend_loc: str = "right margin",

@@ -25,6 +25,9 @@ def select_genes(
     curated_list: Optional[List[str]] = [],
     unwanted_list: Optional[List[str]] = [],
     stratify_obs: Optional[str] = None,
+    focal_obs: Optional[str] = None,
+    n_focal_genes: Optional[int] = 1000,
+    focal_grouping: str = 'union',
     normalize: Optional[bool] = False,
 ) -> List[str]:
     """
@@ -45,7 +48,16 @@ def select_genes(
         unwanted_list : list of str, optional
             List of genes to always exclude from the selection, by default [].
         stratify_obs : str, optional
-            Observation variable to stratify by, by default None.
+            Observation variable to stratify by, by default None. This is for the purpose
+            of limited the effect of this variable on gene selection (e.g. batch information)
+        focal_obs: str, optional
+            opposite to stratifying, this allows you to prioritise genes that are variable across
+            the whole dataset, but not within each category of the focal variable. This is for
+            when you want to emphasise genes that vary *across* categories of this variable
+            (e.g. timepoint information that is not the principle source of variation in data).
+        n_focal_genes: int, optional
+            how many genes per category of focal_obs to gather for capturing the union/intersection
+            of subset genes.
         normalise : bool, optional
             Whether to calculate highly variable genes using normalized, logged data
             or raw data, by default False.
@@ -78,6 +90,18 @@ def select_genes(
             tp_genes = func(sub, n_variable_genes)
             gene_sets.append(tp_genes)
         genes = set(gene_sets[0]).intersection(*gene_sets[1:])
+    elif focal_obs:
+        broad_genes = func(data, n_variable_genes)
+        gene_sets = []
+        for obs in data.obs[focal_obs].unique():
+            sub = data[data.obs[focal_obs] == obs]
+            focal_genes = func(sub, n_focal_genes)
+            gene_sets.append(focal_genes)
+        if focal_grouping == 'union':
+            gene_sets = (set(gene_sets[0]).union(*gene_sets[1:]))
+        elif focal_grouping == 'intersection':
+            gene_sets = (set(gene_sets[0]).intersection(*gene_sets[1:]))
+        genes = set(broad_genes).difference(gene_sets)
     else:
         genes = set(func(data, n_variable_genes))
 
@@ -86,7 +110,6 @@ def select_genes(
     if unwanted_list:
         genes = genes.difference(unwanted_list)
     genes = genes.intersection(data.var_names)
-
     return list(genes)
 
 def size_normalize_splicing(

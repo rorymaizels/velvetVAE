@@ -192,11 +192,12 @@ class VelvetMixin:
 
         if "t" in self.adata_manager.data_registry:
             t = self.adata_manager.get_from_registry("t")
-        elif self.labelling_time is not None:
-            t = self.labelling_time
-        else:
-            print("No labelling time information supplied. Assumed to be 2 hours.")
-            t = 2.0
+        else: 
+            try:
+                t = self.labelling_time
+            except AttributeError:
+                print("No labelling time information supplied. Assumed to be 2 hours.")
+                t = 2.0
 
         torch_device = "cuda" if torch.cuda.is_available() else "cpu"
         x = torch.tensor(X, device=torch_device)

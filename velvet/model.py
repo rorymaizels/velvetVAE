@@ -328,6 +328,7 @@ class Svelvet(
             library_log_means, library_log_vars = _init_library_size(self.adata_manager, n_batch)
 
         self.gamma_mode = gamma_mode
+        self.labelling_time = None
 
         self.module = SplicingVelVAE(
             transcriptome=self.adata_manager.get_from_registry("X"),

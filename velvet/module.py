@@ -765,6 +765,7 @@ class SplicingVelVAE(BaseModuleClass):
             z=z,
             vz=vz,
             library=library,
+            t=None,
             batch_index=batch_index,
             y=y,
             cont_covs=cont_covs,
@@ -830,7 +831,7 @@ class SplicingVelVAE(BaseModuleClass):
 
     @auto_move_data
     def generative(
-        self, z, vz, library, batch_index, cont_covs=None, cat_covs=None, size_factor=None, y=None, transform_batch=None
+        self, z, vz, library, batch_index, t=None, cont_covs=None, cat_covs=None, size_factor=None, y=None, transform_batch=None
     ):
         """Runs the generative model."""
         ### formatting

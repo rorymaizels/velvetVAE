@@ -2,7 +2,7 @@
   <img height="150" src="https://github.com/rorymaizels/velvet/blob/main/docs/%E2%80%8Evelvet.png" />
 </p>
 
-## **Velvet**: deep dynamical modelling from temporal transcriptomics.
+## **VelvetVAE**: deep dynamical modelling from temporal transcriptomics.
 
 Analysis software for modelling dynamics of developing systems as neural stochastic differential equation (nSDE) systems using deep generative modelling and time-resolved scRNA-seq data (such as metabolic labelling).
 
@@ -14,9 +14,9 @@ This package is under active development: it will soon be available on pip with 
 
 ## Installation
 
-Currently, velvet can be installed as follows:
+Currently, velvetVAE + velvetSDE can be installed as follows:
 ```
-pip install git+https://github.com/rorymaizels/velvet --user
+pip install git+https://github.com/rorymaizels/velvetVAE --user
 ```
 
 ## Usage

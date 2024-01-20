@@ -19,8 +19,8 @@ from scvi.data.fields import (
 from scvi.module.base import BaseModuleClass, LossOutput
 from scvi.model.base import ArchesMixin, BaseModelClass, RNASeqMixin, VAEMixin
 
-from velvet.constants import REGISTRY_KEYS_SDE
-from velvet.mixins import VelvetMixin, SDETrainingMixin, SimulationMixin
+from velvetvae.constants import REGISTRY_KEYS_SDE
+from velvetvae.mixins import VelvetMixin, SDETrainingMixin, SimulationMixin
 
 class VelvetSDE(
     RNASeqMixin, VAEMixin, ArchesMixin, SDETrainingMixin, BaseModelClass, VelvetMixin, SimulationMixin

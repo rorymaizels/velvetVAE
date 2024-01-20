@@ -11,7 +11,7 @@ with open("requirements.txt", encoding="UTF-8") as f:
     required = f.read().splitlines()
 
 setup(
-    name="velvet-dynamics",
+    name="velvetvae",
     version=VERSION,
     description="Deep generative modelling of developmental trajectories from temporal transcriptomics",
     long_description=readme,

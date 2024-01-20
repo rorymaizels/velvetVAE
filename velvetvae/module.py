@@ -1,7 +1,7 @@
 """Main module."""
-from velvet.submodule import VectorField, NeighborhoodConstraint
-from velvet.constants import REGISTRY_KEYS_VT
-from velvet.utils import NoWarningZINB
+from velvetvae.submodule import VectorField, NeighborhoodConstraint
+from velvetvae.constants import REGISTRY_KEYS_VT
+from velvetvae.utils import NoWarningZINB
 
 from typing import Callable, Iterable, Optional
 import numpy as np

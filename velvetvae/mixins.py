@@ -1,6 +1,6 @@
 """mixins to support training and wider functionality."""
-from velvet.submodule import MarkovProcess, SDE
-from velvet.preprocessing import neighbors
+from velvetvae.submodule import MarkovProcess, SDE
+from velvetvae.preprocessing import neighbors
 
 from typing import Optional, Union, Tuple, List
 
@@ -97,8 +97,8 @@ class VelvetMixin:
         self,
         total: np.ndarray,
         unspliced: np.ndarray,
-        gamma_min: float = 0.01,
-        gamma_max: float = 100,
+        gamma_min: float = 0.1,
+        gamma_max: float = 10,
     ) -> np.ndarray:
         """
         Finds gamma for splicing, a parameter for the biophysical model of metabolic labelling.

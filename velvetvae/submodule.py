@@ -1,6 +1,6 @@
 """components used for Velvet module and VelvetSDE"""
-from velvet.preprocessing import neighborhood
-from velvet.spline import natural_cubic_spline_coeffs, NaturalCubicSpline
+from velvetvae.preprocessing import neighborhood
+from velvetvae.spline import natural_cubic_spline_coeffs, NaturalCubicSpline
 
 from typing import Optional, List
 
@@ -148,6 +148,7 @@ class MarkovProcess:
         deterministic_scaling: float = 10.0,
         use_similarity: bool = False,
         similarity_strength: float = 0.2,
+        fully_deterministic: bool = False,
     ) -> None:
         """
         Initializes the Markov Process, setting up transition matrices and data objects.
@@ -168,6 +169,7 @@ class MarkovProcess:
         self.adata = model.adata
         self.deterministic_scaling = deterministic_scaling
         self.device = model.device
+        self.fully_deterministic = fully_deterministic
 
         if use_space == "latent_space":
             subdata = ann.AnnData(
@@ -220,6 +222,7 @@ class MarkovProcess:
         Returns:
             Tensor containing the walks.
         """
+        deterministic = self.fully_deterministic
         assert n_steps >= n_jumps, "step before you can jump"
         initial_states = initial_states.reshape(-1, 1)
         paths = initial_states.repeat(1, n_jumps)

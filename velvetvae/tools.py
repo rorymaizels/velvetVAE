@@ -8,7 +8,7 @@ from sklearn.decomposition import PCA
 
 from torchcubicspline import natural_cubic_spline_coeffs, NaturalCubicSpline
 
-from velvet.submodule import ObsNet, ManifoldEstimator
+from velvetvae.submodule import ObsNet, ManifoldEstimator
 
 class Cleaner:
     def __init__(

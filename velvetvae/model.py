@@ -21,9 +21,9 @@ from scvi.model._utils import _init_library_size
 from scvi.model.base import ArchesMixin, BaseModelClass, RNASeqMixin, VAEMixin
 from scvi.utils import setup_anndata_dsp
 
-from velvet.module import VelVAE, SplicingVelVAE
-from velvet.constants import REGISTRY_KEYS_VT
-from velvet.mixins import ModifiedUnsupervisedTrainingMixin, VelvetMixin, ModellingMixin
+from velvetvae.module import VelVAE, SplicingVelVAE
+from velvetvae.constants import REGISTRY_KEYS_VT
+from velvetvae.mixins import ModifiedUnsupervisedTrainingMixin, VelvetMixin, ModellingMixin
 
 logger = logging.getLogger(__name__)
 

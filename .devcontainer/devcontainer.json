@@ -1,5 +1,5 @@
 {
-    "name": "velvet",
+    "name": "velvetvae",
     "dockerFile": "Dockerfile",
     "postCreateCommand": "python -m pip install --upgrade -r requirements-dev.txt -e .",
 

@@ -5,7 +5,7 @@ import scanpy as sc
 from scipy.sparse import issparse
 
 
-from velvet.preprocessing import (
+from velvetvae.preprocessing import (
     moments,
     size_normalize,
     read,

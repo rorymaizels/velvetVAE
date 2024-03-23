@@ -6,8 +6,7 @@ import torch
 import torch.utils.data as data_utils
 from sklearn.decomposition import PCA
 
-from torchcubicspline import natural_cubic_spline_coeffs, NaturalCubicSpline
-
+from velvetvae.spline import natural_cubic_spline_coeffs, NaturalCubicSpline
 from velvetvae.submodule import ObsNet, ManifoldEstimator
 
 class Cleaner:

@@ -1,6 +1,7 @@
 chex==0.1.7
 flax==0.6.11
 jax==0.4.13
+jaxlib==0.4.13
 numba==0.58.1
 llvmlite==0.41.1
 torch==2.0.*

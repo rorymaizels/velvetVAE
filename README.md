@@ -22,13 +22,11 @@ pip install git+https://github.com/rorymaizels/velvetVAE --user
 ## Usage
 
 Until tutorials and documentation are completed, demonstration of how to use velvet can be found in the code reproducing the analysis from [Maizels et al, 2023](https://www.biorxiv.org/content/10.1101/2023.07.06.547989v1), available [here](https://github.com/rorymaizels/Maizels2023aa). In particular, useful notebooks may include:
-- [Basic visualisation of velocity dynamics using velvet](https://github.com/rorymaizels/Maizels2023aa/blob/main/analysis/A2.0_velvet_visualisation.ipynb)
-- [Benchmarking code with standard pipeline for velvet](https://github.com/rorymaizels/Maizels2023aa/blob/main/analysis/A2.35_velvet_quantification.ipynb)
-- [Benchmarking code with standard pipeline for svelvet (with splicing data)](https://github.com/rorymaizels/Maizels2023aa/blob/main/analysis/A2.36_svelvet_quantification.ipynb)
-- [Benchmarking code with standard pipeline for velvetSDE](https://github.com/rorymaizels/Maizels2023aa/blob/main/analysis/A2.37_velvetSDE_quantification.ipynb)
-- [Downstream analysis looking at cell fates](https://github.com/rorymaizels/Maizels2023aa/blob/main/analysis/A2.7_NMP_cellfate.ipynb)
-- [Downstream analysis looking at gene expression patterns](https://github.com/rorymaizels/Maizels2023aa/blob/main/analysis/A3.1_trajectory_viz.ipynb)
-
+- [Basic visualisation of velocity dynamics using velvet](https://github.com/rorymaizels/Maizels2023aa/blob/main/analysis/A2.0.0_velvet_demo.ipynb)
+- [Benchmarking code with standard pipeline for velvet](https://github.com/rorymaizels/Maizels2023aa/tree/main/analysis/A2.2_benchmarking)
+- [Benchmarking code with standard pipeline for svelvet (with splicing data)](https://github.com/rorymaizels/Maizels2023aa/blob/main/analysis/A2.2_benchmarking/B02_svelvet_benchmarking.py)
+- [Benchmarking code with standard pipeline for velvetSDE](https://github.com/rorymaizels/Maizels2023aa/blob/main/analysis/A2.2_benchmarking/B20_velvetSDE_benchmarking.py)
+- [Downstream analysis looking at cell fates](https://github.com/rorymaizels/Maizels2023aa/blob/main/analysis/A3.0_NMP_cellfate.ipynb)
 
 For details on raw data processing for sci-FATE/sci-FATE2 using dynast, see:
 https://github.com/rorymaizels/sciFATE2_processing

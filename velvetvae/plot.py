@@ -80,9 +80,55 @@ def velocity_3d(adata, basis="vae", c=[0, 1, 2], scale=3):
     fig.update_layout(margin=dict(l=0, r=0, b=0, t=0))
     fig.show()
 
+def velocity_stream(
+    model, 
+    basis, 
+    figsize=(8,6), 
+    dpi=200,
+    title="",
+    color=None, 
+    show=True,
+    palette=None,
+    arrow_size=2,
+    legend_fontoutline=10,
+    size=200,
+    fontsize=16, 
+    legend_fontsize=16, 
+    components='1,2'
+):
+    """super simple wrapper for scvelo's plotting function."""
+    model.adata.uns["velocity_params"] = {'embeddings':basis}
 
-def plot_clustered_trajectories(
-    model, trajectories: np.ndarray, cluster_labels: List[int], cmap: List[str], components: List[int] = [0, 1]
+    
+    fig = plt.figure(figsize=figsize, dpi=dpi)
+    ax = fig.subplots()
+
+    scv.pl.velocity_embedding_stream(
+        model.adata, 
+        basis=basis, 
+        title=title,
+        color=color, 
+        show=show,
+        ax=ax,
+        palette=palette,
+        arrow_size=arrow_size,
+        legend_fontoutline=legend_fontoutline,
+        size=size,
+        fontsize=fontsize, 
+        legend_fontsize=legend_fontsize, 
+        components=components
+    )
+    
+def plot_trajectories(
+    model, 
+    trajectories: np.ndarray, 
+    cluster_labels: Optional[List[str]] = None, 
+    cell_color: Optional[str] = None,
+    trajectory_alpha: float = 0.2,
+    cmap: Optional[List[str]] = None,
+    components: List[int] = [0, 1],
+    figsize=(8,8),
+    dpi=200
 ):
     """
     Plots trajectories of data points in PCA space with different colors for different clusters.
@@ -97,12 +143,19 @@ def plot_clustered_trajectories(
     Displays:
         A scatter plot with trajectories of data points in PCA space.
     """
-    z = model.adata.obsm["X_z"]
-    z = torch.tensor(z, device=model.device)
-
+    try:
+        z = model.adata.obsm["X_z"]
+    except:
+        X = model.adata_manager.get_from_registry("X")
+        X = X.A if issparse(X) else X
+        x = torch.tensor(X, device=model.device)
+        b = torch.arange(X.shape[0], device=model.device)
+        model.module.to(model.device)
+        with torch.no_grad():
+            z = model.module.inference(x, b)["z"].detach().cpu().numpy()
+            
     pca = PCA()
-    z_pca = pca.fit_transform(z.detach().cpu().numpy())
-
+    z_pca = pca.fit_transform(z)
     t_pca = []
     for traj in trajectories:
         t_pca.append(pca.transform(traj))
@@ -110,21 +163,70 @@ def plot_clustered_trajectories(
     copy = model.adata.copy()
     copy.obsm["X_vae"] = z_pca
     copy.uns["velocity_params"] = {"embeddings": "vae"}
-    fig, ax = plt.subplots(figsize=(8, 8))
+    fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
     sc.pl.scatter(
         copy,
         basis="vae",
-        color="cell_annotation",
+        color=cell_color,
         ax=ax,
         size=40,
         show=False,
         components=f"{components[0]+1},{components[1]+1}",
     )
 
-    for t, cl in zip(t_pca, cluster_labels):
-        color = cmap[cl]
-        plt.plot(t[:, components[0]], t[:, components[1]], color=color, alpha=0.2)
+    if cluster_labels is None:
+        for t in t_pca:
+            plt.plot(t[:, components[0]], t[:, components[1]], alpha=trajectory_alpha)
+    else:
+        if cmap is None:
+            unique_labels = np.unique(cluster_labels)
+            colors = plt.get_cmap('tab10')
+            cmap = {label: colors(i % colors.N) for i, label in enumerate(unique_labels)}
+        for t, cl in zip(t_pca, cluster_labels):
+            color = cmap[cl]
+            plt.plot(t[:, components[0]], t[:, components[1]], color=color, alpha=trajectory_alpha)
+    plt.show()
+
+def plot_gene_expression(
+    model, 
+    trajectories, 
+    genes, 
+    colors=None,
+    colormap='inferno',
+    alpha=0.3,
+    mean_normalize=False,
+    figsize=(6,5),
+    dpi=200,
+    title="",
+    fontsize=18,
+    mu_linewidth=5,
+):
+    
+    gex = model.get_trajectory_gene_expression(trajectories)
+
+    plt.figure(figsize=figsize, dpi=dpi)
+    
+    cmap = plt.get_cmap(colormap)
+    colors = [cmap(i) for i in np.linspace(0.2,0.9,len(genes))]
+
+    for gene, col in zip(genes,colors):        
+        gene_index = np.where(model.adata.var_names==gene)[0][0]
+        gene_data = gex[:,:,gene_index].cpu().numpy()
+        mu = gene_data.mean(0)
+        if mean_normalize:    
+            mumax = mu.max()
+            gene_data = gene_data / mumax
+            mu = mu / mumax
+            
+        for t in gene_data:
+            plt.plot(t, color=col, alpha=alpha)
+        plt.plot(mu, linewidth=mu_linewidth, color=col, label=gene, zorder=10)
+        plt.plot(mu, linewidth=mu_linewidth+2, color='black', zorder=9)
+        
+    plt.title(title, fontsize=fontsize)
+    plt.ylabel("Predicted expression", fontsize=fontsize)
+    plt.xlabel("Simulation time", fontsize=fontsize)
     plt.show()
 
 

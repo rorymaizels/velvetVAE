@@ -1,13 +1,9 @@
 """tools"""
-from typing import Tuple
 import numpy as np
-from tqdm import tqdm, trange
 import torch
-import torch.utils.data as data_utils
 from sklearn.decomposition import PCA
-
-from velvetvae.spline import natural_cubic_spline_coeffs, NaturalCubicSpline
-from velvetvae.submodule import ObsNet, ManifoldEstimator
+from scipy.sparse import issparse
+from sklearn.preprocessing import StandardScaler
 
 def latent_space_pca(model, device='cuda', n_components=10, embedding_key='latent_pca'):
     torch_device = 'cuda' if (torch.cuda.is_available() and device=='cuda') else 'cpu'
@@ -32,11 +28,12 @@ def latent_space_pca(model, device='cuda', n_components=10, embedding_key='laten
     model.adata.obsm[f'velocity_{embedding_key}'] = v_pca
     model.adata.uns["velocity_params"] = {'embeddings':embedding_key}
     
-def gene_space_pca(model, device='cuda', n_components=10, embedding_key='latent_pca')
+def gene_space_pca(model, n_components=10, embedding_key='latent_pca'):
     scaler = StandardScaler(with_mean=True, with_std=False)
     pca = PCA(n_components=n_components)
     
-    X = model.adata.layers['total']
+    X = model.adata_manager.get_from_registry("X")
+    X = X.A if issparse(X) else X    
     V = model.predict_velocity()
     X = np.array(X.A if issparse(X) else X)
     V = np.array(V.A if issparse(V) else V)
@@ -54,6 +51,7 @@ def gene_space_pca(model, device='cuda', n_components=10, embedding_key='latent_
     model.adata.uns["velocity_params"] = {'embeddings':embedding_key}
 
 def get_plot_data(
+    model,
     gene_expression,
     gene,
     mean_normalize=True

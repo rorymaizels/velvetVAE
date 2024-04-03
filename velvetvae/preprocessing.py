@@ -229,6 +229,8 @@ def neighborhood(
         X = adata.layers[xkey]
     elif xkey in adata.obsm:
         X = adata.obsm[xkey]
+    else:
+        raise KeyError(f"X key '{xkey}' not found in adata layers or obsm. Specify with 'xkey' argument." )
 
     if verbose:
         print("distances, ", end="")

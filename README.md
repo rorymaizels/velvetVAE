@@ -21,7 +21,7 @@ pip install git+https://github.com/rorymaizels/velvetVAE --user
 If you encounter dependency issues, it might be a good idea to set up a virtual environment for velvet:
 
 ```
-module load Python/3.10.8-GCCcore-12.2.0 #ensure you have the right python installe
+module load Python/3.10.8-GCCcore-12.2.0 #ensure you have the right python installed
 python -m venv .pyenv
 source .pyenv/bin/activate
 pip install --upgrade pip
